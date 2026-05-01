@@ -1,0 +1,58 @@
+name: C++ Compilation
+
+on:
+  push:
+    branches: [ main ]
+    tags:
+      - 'v*' # Dispara quando você envia uma tag como v1.0.0
+  pull_request:
+    branches: [ main ]
+
+# Permissões necessárias para criar a Release e fazer upload dos arquivos
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install Dependencies
+        # Instala apenas o necessário para o CMake e o SDK conforme o seu install.sh
+        run: |
+          sudo apt update
+          sudo apt install -y cmake g++ vamp-plugin-sdk 
+
+      - name: Compile on Linux
+        # Executa exatamente os comandos da seção "Compile the VAMP plugin"
+        run: |
+          mkdir build && cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc) 
+
+      # Importante: Renomear o arquivo para não haver conflito na Release
+      - name: Prepare Binary
+        run: mv build/birdnet-vamp.so birdnet-vamp-${{ matrix.os }}.so
+
+      - name: Upload Binary Only
+        uses: actions/upload-artifact@v7
+        with:
+          name: plugin-binary-${{ matrix.os }}
+          path: birdnet-vamp-${{ matrix.os }}.so
+        
+      - name: Create Release and Upload Assets
+        uses: softprops/action-gh-release@v3
+        # Este passo só roda se criar uma TAG (ex: v1.1.5)
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            birdnet-vamp-${{ matrix.os }}.so
+            birdnet_run.py
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
