@@ -1,58 +1,99 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# GitHub Actions Workflow: C++ Compilation
+#
+# Builds the Bioacoustic VAMP Plugin Pack (BirdNET + Perch) as shared libraries
+# (.so files) on multiple Ubuntu versions and publishes them as a
+# GitHub Release when a version tag is pushed.
+# ──────────────────────────────────────────────────────────────────────────────
 name: C++ Compilation
 
+# ── Trigger conditions ────────────────────────────────────────────────────────
 on:
   push:
-    branches: [ main ]
+    branches: [ main ]       # Run on every push to the main branch
     tags:
-      - 'v*' # Dispara quando você envia uma tag como v1.0.0
+      - 'v*'                 # Also run when a version tag is pushed (e.g. v1.0.0)
   pull_request:
-    branches: [ main ]
+    branches: [ main ]       # Run on pull requests targeting main
+  workflow_dispatch:         # Allow manual triggering from the Actions tab
 
-# Permissões necessárias para criar a Release e fazer upload dos arquivos
+# ── Permissions ───────────────────────────────────────────────────────────────
+# 'contents: write' is required to create GitHub Releases and upload assets.
 permissions:
   contents: write
 
+# ── Jobs ──────────────────────────────────────────────────────────────────────
 jobs:
   build:
+    # Build matrix: compile on three Ubuntu versions in parallel to ensure
+    # compatibility across common Linux distributions.
     strategy:
       matrix:
-        os: [ubuntu-latest]
+        os: [ubuntu-latest] # [ubuntu-22.04, ubuntu-24.04, ubuntu-26.04]
     runs-on: ${{ matrix.os }}
 
     steps:
+      # ── Step 1: Check out the repository ────────────────────────────────────
+      # Fetches the full repository source so subsequent steps can access all
+      # files, including subfolders like birdnet_plugin/ and perch_plugin/.
       - name: Checkout
         uses: actions/checkout@v6
 
+      # ── Step 2: Install build dependencies ──────────────────────────────────
+      # Installs the minimum set of packages required to build the plugins:
+      #   - cmake:           build system generator
+      #   - g++:             C++17 compiler
+      #   - vamp-plugin-sdk: headers and shared library for the VAMP interface
       - name: Install Dependencies
-        # Instala apenas o necessário para o CMake e o SDK conforme o seu install.sh
         run: |
           sudo apt update
-          sudo apt install -y cmake g++ vamp-plugin-sdk 
+          sudo apt install -y cmake g++ vamp-plugin-sdk
 
+      # ── Step 3: Compile both VAMP plugins ───────────────────────────────────
+      # Runs CMake in Release mode, which enables compiler optimisations (-O3).
+      # The CMakeLists.txt at the repo root defines two targets:
+      #   - birdnet-vamp  →  build/birdnet-vamp.so
+      #   - perch-vamp    →  build/perch-vamp.so
+      # -j$(nproc) parallelises the build across all available CPU cores.
       - name: Compile on Linux
-        # Executa exatamente os comandos da seção "Compile the VAMP plugin"
         run: |
           mkdir build && cd build
           cmake .. -DCMAKE_BUILD_TYPE=Release
-          make -j$(nproc) 
+          make -j$(nproc)
 
-      # Importante: Renomear o arquivo para não haver conflito na Release
-      - name: Prepare Binary
-        run: mv build/birdnet-vamp.so birdnet-vamp-${{ matrix.os }}.so
+      # ── Step 4: Rename binaries ──────────────────────────────────────────────
+      # Appends the OS name to each .so file so that binaries from different
+      # matrix legs don't overwrite each other when uploaded to the same Release.
+      # Example output: birdnet-vamp-ubuntu-26.04.so
+      - name: Prepare Binaries
+        run: |
+          mv build/birdnet-vamp.so birdnet-vamp-${{ matrix.os }}.so
+          mv build/perch-vamp.so   perch-vamp-${{ matrix.os }}.so
 
-      - name: Upload Binary Only
+      # ── Step 5: Upload binaries as workflow artifacts ────────────────────────
+      # Stores the compiled .so files as downloadable artifacts attached to the
+      # workflow run. Useful for inspecting build results even without a Release.
+      # Artifacts are grouped per OS: plugin-binaries-ubuntu-26.04, etc.
+      - name: Upload Binaries
         uses: actions/upload-artifact@v7
         with:
-          name: plugin-binary-${{ matrix.os }}
-          path: birdnet-vamp-${{ matrix.os }}.so
-        
+          name: plugin-binaries-${{ matrix.os }}
+          path: |
+            birdnet-vamp-${{ matrix.os }}.so
+            perch-vamp-${{ matrix.os }}.so
+
+      # ── Step 6: Publish GitHub Release ──────────────────────────────────────
+      # Only runs when the workflow was triggered by a version tag (e.g. v1.2.0).
+      # Uploads the compiled plugins and their companion Python inference scripts
+      # as Release assets so end-users can download pre-built binaries directly.
       - name: Create Release and Upload Assets
         uses: softprops/action-gh-release@v3
-        # Este passo só roda se criar uma TAG (ex: v1.1.5)
         if: startsWith(github.ref, 'refs/tags/')
         with:
           files: |
             birdnet-vamp-${{ matrix.os }}.so
-            birdnet_run.py
+            perch-vamp-${{ matrix.os }}.so
+            birdnet_plugin/birdnet_run.py
+            perch_plugin/perch_run.py
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
