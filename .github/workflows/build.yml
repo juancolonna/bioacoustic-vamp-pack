@@ -68,14 +68,16 @@ jobs:
       #     ├── birdnet-vamp.so
       #     ├── perch-vamp.so
       #     ├── birdnet_run.py
-      #     └── perch_run.py
+      #     ├── perch_run.py
+      #     └── labels.csv
       - name: Prepare Release Files
         run: |
           mkdir dist
           mv build/birdnet-vamp.so dist/birdnet-vamp.so
-          mv build/perch-vamp.so   dist/perch-vamp.so
+          mv build/perch-vamp.so dist/perch-vamp.so
           cp birdnet_plugin/birdnet_run.py dist/birdnet_run.py
-          cp perch_plugin/perch_run.py     dist/perch_run.py
+          cp perch_plugin/perch_run.py dist/perch_run.py
+          cp perch_plugin/labels.csv dist/labels.csv
 
       # ── Step 5: Upload the dist/ folder as a workflow artifact ───────────────
       # upload-artifact zips the folder contents automatically, producing:

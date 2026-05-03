@@ -1,0 +1,7 @@
+build/
+.codex
+install.sh
+audacity.sh
+sonic-visualiser.sh
+__pycache__/
+*.pyc
