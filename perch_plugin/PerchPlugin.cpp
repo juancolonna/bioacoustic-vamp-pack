@@ -121,10 +121,6 @@ Plugin::FeatureSet PerchPlugin::getRemainingFeatures() {
         json += buf;
     pclose(pipe);
 
-    std::ofstream debug("/home/juan/vamp/perch_stdout.json");
-    debug << json;
-    debug.close();
-
     // Parse detections and build VAMP features
     for (auto& d : parseJSON(json)) {
         Feature f;
@@ -138,7 +134,7 @@ Plugin::FeatureSet PerchPlugin::getRemainingFeatures() {
     }
 
     // Remove temporary WAV file
-    //std::remove(m_wavPath.c_str());
+    std::remove(m_wavPath.c_str());
 
     return output;
 }

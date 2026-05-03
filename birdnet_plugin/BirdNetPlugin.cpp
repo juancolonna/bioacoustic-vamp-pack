@@ -151,33 +151,45 @@ Plugin::FeatureSet BirdNetPlugin::getRemainingFeatures() {
     return output;
 }
 
-// ── WAV writer (16-bit PCM mono) ─────────────────────────────────────────────
+// ── WAV writer (32 bit mono) ─────────────────────────────────────────────
 
 void BirdNetPlugin::writeWAV(const std::string& path,
-                              const float* samples,
-                              int n, int sr) const
+                           const float* samples,
+                           int n,
+                           int sr) const
 {
     std::ofstream f(path, std::ios::binary);
 
-    auto w16 = [&](uint16_t v){ f.write((char*)&v, 2); };
-    auto w32 = [&](uint32_t v){ f.write((char*)&v, 4); };
+    auto w16 = [&](uint16_t v){ f.write(reinterpret_cast<const char*>(&v), 2); };
+    auto w32 = [&](uint32_t v){ f.write(reinterpret_cast<const char*>(&v), 4); };
 
-    uint32_t dataBytes = (uint32_t)(n * 2);
-    f.write("RIFF", 4); w32(36 + dataBytes);
+    const uint16_t audioFormat    = 3;   // IEEE float
+    const uint16_t channels       = 1;   // mono
+    const uint16_t bitsPerSample  = 32;
+    const uint16_t bytesPerSample = bitsPerSample / 8;
+    const uint16_t blockAlign     = channels * bytesPerSample;
+    const uint32_t byteRate       = sr * blockAlign;
+    const uint32_t dataBytes      = n * blockAlign;
+
+    f.write("RIFF", 4);
+    w32(36 + dataBytes);
     f.write("WAVE", 4);
-    f.write("fmt ", 4); w32(16);
-    w16(1);                       // PCM format
-    w16(1);                       // mono
-    w32((uint32_t)sr);            // sample rate
-    w32((uint32_t)(sr * 2));      // byte rate
-    w16(2);                       // block align
-    w16(16);                      // bits per sample
-    f.write("data", 4); w32(dataBytes);
+
+    f.write("fmt ", 4);
+    w32(16);
+    w16(audioFormat);             // 3 = IEEE float
+    w16(channels);                // mono
+    w32((uint32_t)sr);            // host sample rate
+    w32(byteRate);
+    w16(blockAlign);
+    w16(bitsPerSample);
+
+    f.write("data", 4);
+    w32(dataBytes);
 
     for (int i = 0; i < n; i++) {
-        float   v = std::max(-1.0f, std::min(1.0f, samples[i]));
-        int16_t s = (int16_t)(v * 32767.0f);
-        f.write((char*)&s, 2);
+        float v = std::max(-1.0f, std::min(1.0f, samples[i]));
+        f.write(reinterpret_cast<const char*>(&v), sizeof(float));
     }
 }
 
