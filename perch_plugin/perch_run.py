@@ -2,7 +2,10 @@
 # /// script
 # requires-python = ">=3.12"
 # dependencies = [
-#   "birdnet",
+#   "tensorflow", 
+#   "tensorflow_hub",
+#   "setuptools<82",
+#   "librosa",
 # ]
 # ///
 """
@@ -37,12 +40,30 @@ Output:
  License: MIT
 """
  
-from calendar import week
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # suppress TensorFlow logs
- 
+
 import sys
 import json
+import librosa
+import numpy as np
+import tensorflow as tf
+import warnings
+warnings.filterwarnings(
+    "ignore",
+    message="pkg_resources is deprecated as an API.*",
+    category=UserWarning,
+)
+import tensorflow_hub as hub
+# tf.experimental.numpy.experimental_enable_numpy_behavior()
+
+import csv
+labels_path = os.path.join(os.path.dirname(__file__), "labels.csv")
+labels = []
+with open(labels_path, newline="", encoding="utf-8") as f:
+    reader = csv.DictReader(f)
+    for row in reader:
+        labels.append(row["inat2024_fsd50k"])
 
 def merge_detections(detections):
     """
@@ -106,47 +127,63 @@ def main():
     wav_path  = sys.argv[1]
     # Convert threshold from percentage to 0..0.99
     threshold = (float(sys.argv[2]) if len(sys.argv) > 2 else 25.0) / 100.0 
-    top_k     = int(sys.argv[3])   if len(sys.argv) > 3 else 10
-    stride    = float(sys.argv[4]) if len(sys.argv) > 4 else 3.0
+    top_k     = int(sys.argv[3])    if len(sys.argv) > 3 else 10
+    stride    = float(sys.argv[4])  if len(sys.argv) > 4 else 5.0
 
     # Clamp stride to valid range and compute overlap
-    stride  = max(0.1, min(3.0, stride))  # ensure stride is in [0.1, 3.0]
-    overlap = max(0.0, 3.0 - stride)      # overlap = window_duration - stride
+    stride  = max(0.1, min(5.0, stride))  # ensure stride is in [0.1, 5.0]
 
-    # Load BirdNET acoustic model v2.4 with TensorFlow backend
-    model = birdnet.load("acoustic", "2.4", "tf")
+    # Load Perch v2 acoustic model v2.4 with TensorFlow backend
+    model = hub.load('https://www.kaggle.com/models/google/bird-vocalization-classifier/tensorFlow2/perch_v2_cpu/1')
 
-    # Run prediction with sliding window
-    predictions = model.predict(wav_path,
-                            # threshold have to be a float in 0..0.99
-                            default_confidence_threshold=threshold, 
-                            top_k=top_k,
-                            overlap_duration_s=overlap,
-                            custom_species_list=species_filter,
-                            bandpass_fmin=freq_min,
-                            bandpass_fmax=freq_max).to_structured_array()
+    # Read audio file as mono 32 kHz waveform.
+    waveform, _ = librosa.load(wav_path, sr=32000, mono=True)
+    waveform = waveform.astype(np.float32, copy=False)
+
+    # Perch expects 5-second windows: 5 * 32000 samples.
+    sample_rate = 32000
+    window_len = int(5 * sample_rate)
+    stride_len = int(stride * sample_rate)
+
     detections = []
-    
-    for row in predictions:
-        species    = row['species_name']
-        scientific = species.split("_")[0]
-        common     = species.split("_")[1]
-        conf       = int(100.0 * round(row['confidence'], 4)) # Converts confidence from 0..1 to an integer percentage
-        
-        detections.append({
-            "species":    common,
-            "scientific": scientific,
-            "confidence": conf,
-            "start_time":     float(row['start_time']),
-            "end_time":      float(row['end_time']),
-        })
+
+    # Slide a 5-second window across the full waveform.
+    for start_sample in range(0, len(waveform), stride_len):
+        end_sample = start_sample + window_len
+
+        window = waveform[start_sample:end_sample]
+
+        if len(window) < window_len:
+            window = np.pad(window, (0, window_len - len(window)))
+
+        start_time = start_sample / sample_rate
+        end_time = min(end_sample, len(waveform)) / sample_rate
+
+        predictions = model.signatures["serving_default"](inputs=window[np.newaxis, :])
+
+        scores = tf.sigmoid(predictions["label"]).numpy()[0]
+        candidate_indices = np.where(scores >= threshold)[0]
+        top_indices = candidate_indices[np.argsort(scores[candidate_indices])[::-1][:top_k]]
+
+        for idx in top_indices:
+            idx = int(idx)
+            score = float(scores[idx])
+            conf = round(100.0 * score, 4)
+            label = labels[idx]
+
+            detections.append({
+                "species": label,
+                "scientific": label,
+                "confidence": conf,
+                "start_time": round(start_time, 4),
+                "end_time": round(end_time, 4),
+            })
 
     # Merge consecutive/overlapping detections of the same species
     detections = merge_detections(detections)
 
-    # Output predictions as JSON to stdout (read by the VAMP plugin via popen)
+    # Output predictions as JSON to stdout
     print(json.dumps(detections), flush=True)
-
 
 if __name__ == "__main__":
     main()
