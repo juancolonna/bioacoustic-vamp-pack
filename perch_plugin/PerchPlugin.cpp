@@ -42,7 +42,7 @@ PerchPlugin::PerchPlugin(float inputSampleRate)
     , m_blockSize(0)
     , m_threshold(25.0f)
     , m_topK(10)
-    , m_stride(3.0f)
+    , m_stride(5.0f)
 {
     const char* vampPath = getenv("VAMP_PATH");
 
@@ -250,8 +250,8 @@ Plugin::ParameterList PerchPlugin::getParameterDescriptors() const {
     p3.description  = "Sliding window step size in seconds";
     p3.unit         = "s";
     p3.minValue     = 1.0f;
-    p3.maxValue     = 3.0f;
-    p3.defaultValue = 3.0f;
+    p3.maxValue     = 5.0f;
+    p3.defaultValue = 5.0f;
     p3.isQuantized  = false;
 
     return { p, p2, p3 };
