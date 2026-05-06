@@ -58,7 +58,7 @@ import tensorflow_hub as hub
 # tf.experimental.numpy.experimental_enable_numpy_behavior()
 
 import csv
-labels_path = os.path.join(os.path.dirname(__file__), "labels.csv")
+labels_path = os.path.join(os.path.dirname(__file__), "perch_labels.csv")
 labels = []
 with open(labels_path, newline="", encoding="utf-8") as f:
     reader = csv.DictReader(f)
