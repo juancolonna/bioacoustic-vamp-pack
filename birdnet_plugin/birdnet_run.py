@@ -21,12 +21,12 @@ Usage:
  
 Arguments:
     wav_path   : Path to the input WAV file.
-    threshold  : Minimum confidence score to report a detection (default: 25.0%, interval: 0-99).
+    threshold  : Minimum confidence score to report a detection (default: 25.0%, interval: 1-99).
     top_k      : Maximum number of species to consider per segment (default: 10).
-    stride     : Sliding window step in seconds, in range [0.1, 3.0] (default: 3.0).
+    stride     : Sliding window step in seconds, in range [1.0, 3.0] (default: 3.0).
     freq_min   : Lower bound for the bandpass filter in Hz (default: 0).
     freq_max   : Upper bound for the bandpass filter in Hz (default: 15000).
-    geo_model_confidence : Minimum confidence for geographic model filtering (default: 3.0%, interval: 0-99). It only has effect if lat and lon parameters are set.
+    geo_model_confidence : Minimum confidence for geographic model filtering (default: 3.0%, interval: 1-99). It only has effect if lat and lon parameters are set.
     lat        : Latitude for geographic filtering, 0.0 = disabled (default: 0.0).
     lon        : Longitude for geographic filtering, 0.0 = disabled (default: 0.0).
     week       : Week of the year for seasonal filtering, 0 = disabled (default: 0). It only has effect if lat and lon parameters are set.

@@ -24,9 +24,9 @@ Usage:
  
 Arguments:
     wav_path   : Path to the input WAV file.
-    threshold  : Minimum confidence score to report a detection (default: 25.0%, interval: 0-99).
+    threshold  : Minimum confidence score to report a detection (default: 25.0%, interval: 1-99).
     top_k      : Maximum number of species to consider per segment (default: 10).
-    stride     : Sliding window step in seconds, in range [0.1, 3.0] (default: 3.0).
+    stride     : Sliding window step in seconds, in range [1.0, 5.0] (default: 5.0).
  
 Output:
     JSON array of detections, each containing:
