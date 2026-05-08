@@ -1,5 +1,5 @@
 /**
- * PerchPlugin.cpp — VAMP plugin implementation for bird species detection.
+ * PerchPlugin.cpp — VAMP plugin implementation for bird species detection with Perch v2.
  *
  * Processing strategy:
  *   1. process()              — accumulates all input samples into m_audioBuffer.
@@ -285,7 +285,7 @@ void PerchPlugin::setParameter(std::string id, float value) {
 // ── VAMP metadata ────────────────────────────────────────────────────────────
 
 std::string PerchPlugin::getIdentifier()    const { return "perch-vamp"; }
-std::string PerchPlugin::getName()          const { return "Perch"; }
+std::string PerchPlugin::getName()          const { return "Perch v2"; }
 std::string PerchPlugin::getDescription()   const { return "Bird species detection using Perch v2"; }
 std::string PerchPlugin::getMaker()         const { return "Bioacoustics"; }
 std::string PerchPlugin::getCopyright()     const { return "MIT License — Prof. Dr. Juan G. Colonna <github.com/juancolonna>"; }
@@ -298,8 +298,8 @@ Plugin::InputDomain PerchPlugin::getInputDomain() const {
 Plugin::OutputList PerchPlugin::getOutputDescriptors() const {
     OutputDescriptor d;
     d.identifier       = "detections";
-    d.name             = "Perch Detections";
-    d.description      = "Detected species with confidence score and timestamp";
+    d.name             = "Perch v2 Detections";
+    d.description      = "Detected bird species with confidence score and timestamp";
     d.unit             = "Species (confidence %)";
     d.hasFixedBinCount = true;
     d.binCount         = 1;

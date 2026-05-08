@@ -9,10 +9,10 @@
 # ]
 # ///
 """
-perch_run.py — Perch inference script for the Audacity or Sonic-Visualiser VAMP plugin.
+perch_run.py — Perch v2 inference script for the Audacity or Sonic-Visualiser VAMP plugin.
  
 This script is called by the VAMP plugin (PerchPlugin.cpp) as a subprocess.
-It loads a Perch acoustic model, runs species prediction on a WAV file,
+It loads a Perch v2 acoustic model, runs species prediction on a WAV file,
 and prints the predictions as a JSON array to stdout.
  
 Consecutive or overlapping detections of the same species are merged into a
@@ -20,7 +20,7 @@ single detection spanning from the first to the last segment, with confidence
 computed as the average across all merged segments.
  
 Usage:
-    uv run perch_run.py <wav_path> [threshold] [top_k] [stride] [freq_min] [freq_max] [geo_model_confidence] [lat] [lon] [week]
+    uv run perch_run.py <wav_path> [threshold] [top_k] [stride]
  
 Arguments:
     wav_path   : Path to the input WAV file.

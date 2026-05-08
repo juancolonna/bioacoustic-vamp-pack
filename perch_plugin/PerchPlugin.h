@@ -60,8 +60,8 @@ private:
     struct Detection {
         std::string species;     // scientific name
         float       confidence;  // average confidence score in %
-        float       start_time;      // merged segment start time in seconds
-        float       end_time;       // merged segment end time in seconds
+        float       start_time;  // merged segment start time in seconds
+        float       end_time;    // merged segment end time in seconds
     };
 
     // Parses the JSON array returned by perch_run.py
