@@ -187,6 +187,14 @@ def main():
             conf = round(100.0 * score, 4)
             label = labels[idx]
 
+            # replace the '_' with space for better readability
+            label = label.replace("_", " ")
+
+            # replace for better readability:
+            label = label.replace("anthrop", "anthropophony") # 'anthrop' by 'anthropophony'
+            label = label.replace("bioph", "biophony") # 'bioph' by 'biophony'
+            label = label.replace("geoph", "geophony") # 'geoph' by 'geophony'
+
             detections.append({
                 "species": label,
                 "scientific": label,
