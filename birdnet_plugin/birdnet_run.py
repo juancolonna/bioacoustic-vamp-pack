@@ -123,7 +123,7 @@ def main():
     week      = int(sys.argv[10])   if len(sys.argv) > 10 else 0
 
     # Clamp stride to valid range and compute overlap
-    stride  = max(0.1, min(3.0, stride))  # ensure stride is in [0.1, 3.0]
+    stride  = max(1.0, min(3.0, stride))  # ensure stride is in [1.0, 3.0]
     overlap = max(0.0, 3.0 - stride)      # overlap = window_duration - stride
 
     # Apply geographic/seasonal species filter if coordinates are provided

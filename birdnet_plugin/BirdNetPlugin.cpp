@@ -252,7 +252,7 @@ Plugin::ParameterList BirdNetPlugin::getParameterDescriptors() const {
     p.name         = "Confidence Threshold";
     p.description  = "Minimum confidence score (%) to report a detection";
     p.unit         = "%";
-    p.minValue     = 0.0f;
+    p.minValue     = 1.0f;
     p.maxValue     = 99.0f;
     p.defaultValue = 25.0f;
     p.isQuantized  = false;
@@ -372,7 +372,7 @@ void BirdNetPlugin::setParameter(std::string id, float value) {
 // ── VAMP metadata ────────────────────────────────────────────────────────────
 
 std::string BirdNetPlugin::getIdentifier()    const { return "birdnet-vamp"; }
-std::string BirdNetPlugin::getName()          const { return "BirdNET"; }
+std::string BirdNetPlugin::getName()          const { return "BirdNET v2.4"; }
 std::string BirdNetPlugin::getDescription()   const { return "Bird species detection using BirdNET v2.4"; }
 std::string BirdNetPlugin::getMaker()         const { return "Bioacoustics"; }
 std::string BirdNetPlugin::getCopyright()     const { return "MIT License — Prof. Dr. Juan G. Colonna <github.com/juancolonna>"; }
@@ -385,7 +385,7 @@ Plugin::InputDomain BirdNetPlugin::getInputDomain() const {
 Plugin::OutputList BirdNetPlugin::getOutputDescriptors() const {
     OutputDescriptor d;
     d.identifier       = "detections";
-    d.name             = "BirdNET Detections";
+    d.name             = "BirdNET v2.4 Detections";
     d.description      = "Detected species with confidence score and timestamp";
     d.unit             = "Species (confidence %)";
     d.hasFixedBinCount = true;

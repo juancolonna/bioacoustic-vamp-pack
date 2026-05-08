@@ -240,7 +240,7 @@ Plugin::ParameterList SurfPerchPlugin::getParameterDescriptors() const {
     p.name         = "Confidence Threshold";
     p.description  = "Minimum confidence score (%) to report a detection";
     p.unit         = "%";
-    p.minValue     = 0.0f;
+    p.minValue     = 1.0f;
     p.maxValue     = 99.0f;
     p.defaultValue = 25.0f;
     p.isQuantized  = false;
@@ -285,8 +285,8 @@ void SurfPerchPlugin::setParameter(std::string id, float value) {
 // ── VAMP metadata ────────────────────────────────────────────────────────────
 
 std::string SurfPerchPlugin::getIdentifier()    const { return "surfperch-vamp"; }
-std::string SurfPerchPlugin::getName()          const { return "SurfPerch"; }
-std::string SurfPerchPlugin::getDescription()   const { return "Reef coral sounds detection using SurfPerch"; }
+std::string SurfPerchPlugin::getName()          const { return "SurfPerch v1.0"; }
+std::string SurfPerchPlugin::getDescription()   const { return "Reef coral sounds detection using SurfPerch v1.0"; }
 std::string SurfPerchPlugin::getMaker()         const { return "Bioacoustics"; }
 std::string SurfPerchPlugin::getCopyright()     const { return "MIT License — Prof. Dr. Juan G. Colonna <github.com/juancolonna>"; }
 int         SurfPerchPlugin::getPluginVersion() const { return 1; }
@@ -298,7 +298,7 @@ Plugin::InputDomain SurfPerchPlugin::getInputDomain() const {
 Plugin::OutputList SurfPerchPlugin::getOutputDescriptors() const {
     OutputDescriptor d;
     d.identifier       = "detections";
-    d.name             = "SurfPerch Detections";
+    d.name             = "SurfPerch v1.0 Detections";
     d.description      = "Detected reef coral sounds with confidence score and timestamp";
     d.unit             = "Sounds (confidence %)";
     d.hasFixedBinCount = true;

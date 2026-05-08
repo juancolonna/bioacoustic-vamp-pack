@@ -145,7 +145,7 @@ def main():
     stride    = float(sys.argv[4])  if len(sys.argv) > 4 else 5.0
 
     # Clamp stride to valid range and compute overlap
-    stride  = max(0.1, min(5.0, stride))  # ensure stride is in [0.1, 5.0]
+    stride  = max(1.0, min(5.0, stride))  # ensure stride is in [1.0, 5.0]
 
     labels = load_labels()
 
@@ -155,6 +155,7 @@ def main():
     # Read audio file as mono 32 kHz waveform.
     waveform, _ = librosa.load(wav_path, sr=32000, mono=True)
     waveform = waveform.astype(np.float32, copy=False)
+    waveform = waveform - np.mean(waveform)  # zero-mean normalization
 
     # SurfPerch expects 5-second windows: 5 * 32000 samples.
     sample_rate = 32000
@@ -177,7 +178,7 @@ def main():
 
         predictions = model.signatures["serving_default"](inputs=window[np.newaxis, :])
 
-        scores = tf.sigmoid(predictions["label"]).numpy()[0]
+        scores = tf.sigmoid(predictions["reef_label"]).numpy()[0]
         candidate_indices = np.where(scores >= threshold)[0]
         top_indices = candidate_indices[np.argsort(scores[candidate_indices])[::-1][:top_k]]
 
@@ -202,6 +203,8 @@ def main():
                 "start_time": round(start_time, 4),
                 "end_time": round(end_time, 4),
             })
+
+    print(f"Raw detections before merging: {len(detections)}", file=sys.stderr)
 
     # Merge consecutive/overlapping detections of the same species
     detections = merge_detections(detections)

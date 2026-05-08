@@ -145,7 +145,7 @@ def main():
     stride    = float(sys.argv[4])  if len(sys.argv) > 4 else 5.0
 
     # Clamp stride to valid range and compute overlap
-    stride  = max(0.1, min(5.0, stride))  # ensure stride is in [0.1, 5.0]
+    stride  = max(1.0, min(5.0, stride))  # ensure stride is in [1.0, 5.0]
 
     labels = load_labels()
 
@@ -155,7 +155,8 @@ def main():
     # Read audio file as mono 32 kHz waveform.
     waveform, _ = librosa.load(wav_path, sr=32000, mono=True)
     waveform = waveform.astype(np.float32, copy=False)
-
+    waveform = waveform - np.mean(waveform)  # zero-mean normalization
+    
     # Perch expects 5-second windows: 5 * 32000 samples.
     sample_rate = 32000
     window_len = int(5 * sample_rate)
