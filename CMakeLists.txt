@@ -3,6 +3,7 @@
 # Builds two shared libraries (.so) that implement the VAMP plugin interface:
 #   - birdnet-vamp.so  (BirdNET v2.4 inference)
 #   - perch-vamp.so    (Perch v2 inference)
+#   - surfperch-vamp.so (SurfPerch inference)
 #
 # Requirements:
 #   - CMake >= 3.16
@@ -50,5 +51,23 @@ target_link_libraries(perch-vamp
 
 set_target_properties(perch-vamp PROPERTIES
     PREFIX ""           # output: perch-vamp.so (no "lib" prefix)
+    CXX_STANDARD 17
+)
+
+# ── SurfPerch plugin ──────────────────────────────────────────────────────────────
+file(GLOB SURFPERCH_SOURCES "surfperch_plugin/*.cpp")
+
+add_library(surfperch-vamp SHARED ${SURFPERCH_SOURCES})
+
+target_include_directories(surfperch-vamp PRIVATE
+    /usr/include/vamp-sdk
+)
+
+target_link_libraries(surfperch-vamp
+    vamp-sdk
+)
+
+set_target_properties(surfperch-vamp PROPERTIES
+    PREFIX ""           # output: surfperch-vamp.so (no "lib" prefix)
     CXX_STANDARD 17
 )
