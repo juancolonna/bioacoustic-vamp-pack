@@ -27,8 +27,8 @@ Arguments:
     freq_min   : Lower bound for the bandpass filter in Hz (default: 0).
     freq_max   : Upper bound for the bandpass filter in Hz (default: 15000).
     geo_model_confidence : Minimum confidence for geographic model filtering (default: 3.0%, interval: 1-99). It only has effect if lat and lon parameters are set.
-    lat        : Latitude for geographic filtering, 0.0 = disabled (default: 0.0).
-    lon        : Longitude for geographic filtering, 0.0 = disabled (default: 0.0).
+    lat        : Latitude for geographic filtering, 90.0 = disabled (default: 90.0).
+    lon        : Longitude for geographic filtering.
     week       : Week of the year for seasonal filtering, 0 = disabled (default: 0). It only has effect if lat and lon parameters are set.
  
 Output:

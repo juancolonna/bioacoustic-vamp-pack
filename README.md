@@ -150,9 +150,9 @@ Where `XX%` is the average confidence score across all merged segments.
 
 When Latitude 'and' Longitude are set to non-zero values, the plugin activates BirdNET's geographic model to filter the species list before running acoustic inference. This restricts detections to species that are realistically expected at the given location, significantly reducing false positives. Optionally, setting Week of the Year (1–52) further narrows the filter to species expected at that location during that season. For example, a migratory species present only in summer will be excluded outside its expected seasonal window.
 
-The Geographic Model Confidence parameter controls how broadly the geo model selects candidate species. Lower values (e.g., 0.01) include more species in the filter; higher values (e.g., 0.1) apply a stricter regional filter.
+The Geographic Model Confidence parameter controls how broadly the geo model selects candidate species. Lower values (e.g., 1%) include more species in the filter; higher values (e.g., 3%) apply a stricter regional filter.
 
-> **Note:** Geographic filtering has no effect if any, Latitude or Longitude, are left at 0.0.
+> **Note:** Geographic filtering has no effect if latitude is set to 90.0 or -90.0.
 
 ## Troubleshooting
 
