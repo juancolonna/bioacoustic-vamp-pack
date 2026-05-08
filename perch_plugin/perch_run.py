@@ -44,6 +44,7 @@ import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # suppress TensorFlow logs
 
 import sys
+import csv
 import json
 import librosa
 import numpy as np
@@ -57,13 +58,26 @@ warnings.filterwarnings(
 import tensorflow_hub as hub
 # tf.experimental.numpy.experimental_enable_numpy_behavior()
 
-import csv
-labels_path = os.path.join(os.path.dirname(__file__), "perch_labels.csv")
-labels = []
-with open(labels_path, newline="", encoding="utf-8") as f:
-    reader = csv.DictReader(f)
-    for row in reader:
-        labels.append(row["inat2024_fsd50k"])
+
+def load_labels():
+    """
+    Load labels from perch_labels.csv.
+
+    The file must be in the same directory as this script and contain the
+    column "inat2024_fsd50k". The order is preserved because model scores
+    are matched to labels by index.
+
+    Returns:
+        list[str]: Labels read from the CSV file.
+    """
+    labels_path = os.path.join(os.path.dirname(__file__), "perch_labels.csv")
+    labels = []
+    with open(labels_path, newline="", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            labels.append(row["inat2024_fsd50k"])
+    return labels
+
 
 def merge_detections(detections):
     """
@@ -132,6 +146,8 @@ def main():
 
     # Clamp stride to valid range and compute overlap
     stride  = max(0.1, min(5.0, stride))  # ensure stride is in [0.1, 5.0]
+
+    labels = load_labels()
 
     # Load Perch v2 acoustic model v2.4 with TensorFlow backend
     model = hub.load('https://www.kaggle.com/models/google/bird-vocalization-classifier/tensorFlow2/perch_v2_cpu/1')
