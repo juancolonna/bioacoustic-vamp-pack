@@ -1,9 +1,9 @@
 # ──────────────────────────────────────────────────────────────────────────────
 # GitHub Actions Workflow: C++ Compilation
 #
-# Builds the Bioacoustic VAMP Plugin Pack (BirdNET + Perch) as shared libraries
-# (.so files) on multiple Ubuntu versions and optionally publishes them as a
-# GitHub Release when a version tag is pushed.
+# Builds the Bioacoustic VAMP Plugin Pack (BirdNET + Perch + SurfPerch) as shared 
+# libraries (.so files) on multiple Ubuntu versions and optionally publishes them 
+# as a GitHub Release when a version tag is pushed.
 # ──────────────────────────────────────────────────────────────────────────────
 name: C++ Compilation
 
@@ -35,7 +35,7 @@ jobs:
     steps:
       # ── Step 1: Check out the repository ────────────────────────────────────
       # Fetches the full repository source so subsequent steps can access all
-      # files, including subfolders like birdnet_plugin/ and perch_plugin/.
+      # files, including subfolders like birdnet_plugin/, perch_plugin/, and surfperch_plugin/.
       - name: Checkout
         uses: actions/checkout@v6
 
@@ -54,6 +54,7 @@ jobs:
       # The CMakeLists.txt at the repo root defines two targets:
       #   - birdnet-vamp  ->  build/birdnet-vamp.so
       #   - perch-vamp    ->  build/perch-vamp.so
+      #   - surfperch-vamp -> build/surfperch-vamp.so
       # -j$(nproc) parallelises the build across all available CPU cores.
       - name: Compile on Linux
         run: |
@@ -66,20 +67,27 @@ jobs:
       # into a single 'dist/' directory:
       #   dist/
       #     ├── birdnet-vamp.so
-      #     ├── perch-vamp.so
       #     ├── birdnet_run.py
       #     ├── birdnet_labels.csv
+      #     ├── perch-vamp.so
       #     ├── perch_run.py
-      #     └── perch_labels.csv
+      #     ├── perch_labels.csv
+      #     ├── surfperch-vamp.so
+      #     ├── surfperch_run.py
+      #     └── reef_labels.csv
+
       - name: Prepare Release Files
         run: |
           mkdir dist
           mv build/birdnet-vamp.so dist/birdnet-vamp.so
-          mv build/perch-vamp.so dist/perch-vamp.so
           cp birdnet_plugin/birdnet_run.py dist/birdnet_run.py
           cp birdnet_plugin/birdnet_labels.csv dist/birdnet_labels.csv
+          mv build/perch-vamp.so dist/perch-vamp.so
           cp perch_plugin/perch_run.py dist/perch_run.py
           cp perch_plugin/perch_labels.csv dist/perch_labels.csv
+          mv build/surfperch-vamp.so dist/surfperch-vamp.so
+          cp surfperch_plugin/surfperch_run.py dist/surfperch_run.py
+          cp surfperch_plugin/reef_labels.csv dist/reef_labels.csv
 
       # ── Step 5: Upload the dist/ folder as a workflow artifact ───────────────
       # upload-artifact zips the folder contents automatically, producing:
