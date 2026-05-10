@@ -1,9 +1,12 @@
 # ──────────────────────────────────────────────────────────────────────────────
 # GitHub Actions Workflow: C++ Compilation
 #
-# Builds the Bioacoustic VAMP Plugin Pack (BirdNET + Perch + SurfPerch) as shared 
-# libraries (.so files) on multiple Ubuntu versions and optionally publishes them 
-# as a GitHub Release when a version tag is pushed.
+# Builds the Bioacoustic VAMP Plugin Pack (BirdNET + Perch + SurfPerch) as shared
+# libraries (.so files) on Ubuntu 22.04 and optionally publishes them as a
+# GitHub Release when a version tag is pushed.
+#
+# Prof. Juan G. Colonna, IComp, UFAM.
+#
 # ──────────────────────────────────────────────────────────────────────────────
 name: C++ Compilation
 
@@ -25,17 +28,19 @@ permissions:
 # ── Jobs ──────────────────────────────────────────────────────────────────────
 jobs:
   build:
-    # Build matrix: compile on three Ubuntu versions in parallel to ensure
-    # compatibility across common Linux distributions.
+    # Build on Ubuntu 22.04 to avoid the moving target of ubuntu-latest.
+    # This helps keep the generated Linux x86_64 binaries more predictable.
     strategy:
       matrix:
-        os: [ubuntu-latest] # [ubuntu-22.04, ubuntu-24.04]
+        os: [ubuntu-22.04]
+
     runs-on: ${{ matrix.os }}
 
     steps:
       # ── Step 1: Check out the repository ────────────────────────────────────
       # Fetches the full repository source so subsequent steps can access all
-      # files, including subfolders like birdnet_plugin/, perch_plugin/, and surfperch_plugin/.
+      # files, including subfolders like birdnet_plugin/, perch_plugin/, and
+      # surfperch_plugin/.
       - name: Checkout
         uses: actions/checkout@v6
 
@@ -43,17 +48,24 @@ jobs:
       # Installs the minimum set of packages required to build the plugins:
       #   - cmake:           build system generator
       #   - g++:             C++17 compiler
-      #   - vamp-plugin-sdk: headers and shared library for the VAMP interface
+      #   - vamp-plugin-sdk: VAMP SDK headers and libraries
       - name: Install Dependencies
         run: |
           sudo apt update
           sudo apt install -y cmake g++ vamp-plugin-sdk
 
-      # ── Step 3: Compile both VAMP plugins ───────────────────────────────────
-      # Runs CMake in Release mode, which enables compiler optimisations (-O3).
-      # The CMakeLists.txt at the repo root defines two targets:
-      #   - birdnet-vamp  ->  build/birdnet-vamp.so
-      #   - perch-vamp    ->  build/perch-vamp.so
+      # ── Step 3: Verify static VAMP SDK library ──────────────────────────────
+      # The CMakeLists.txt links against libvamp-sdk.a to avoid requiring
+      # libvamp-sdk.so on the user's system.
+      - name: Check static VAMP SDK
+        run: |
+          find /usr/lib /usr/lib64 -name "libvamp-sdk.a" -print
+
+      # ── Step 4: Compile VAMP plugins ────────────────────────────────────────
+      # Runs CMake in Release mode.
+      # The CMakeLists.txt at the repo root defines three targets:
+      #   - birdnet-vamp   -> build/birdnet-vamp.so
+      #   - perch-vamp     -> build/perch-vamp.so
       #   - surfperch-vamp -> build/surfperch-vamp.so
       # -j$(nproc) parallelises the build across all available CPU cores.
       - name: Compile on Linux
@@ -62,52 +74,58 @@ jobs:
           cmake .. -DCMAKE_BUILD_TYPE=Release
           make -j$(nproc)
 
-      # ── Step 4: Collect all distributable files into a staging folder ────────
-      # Gathers the two compiled .so files and the two Python inference scripts
-      # into a single 'dist/' directory:
-      #   dist/
-      #     ├── birdnet-vamp.so
-      #     ├── birdnet_run.py
-      #     ├── birdnet_labels.csv
-      #     ├── perch-vamp.so
-      #     ├── perch_run.py
-      #     ├── perch_labels.csv
-      #     ├── surfperch-vamp.so
-      #     ├── surfperch_run.py
-      #     └── reef_labels.csv
-
+      # ── Step 5: Collect all distributable files into a staging folder ───────
+      # Gathers the compiled .so files, Python inference scripts, and label files
+      # into a single 'dist' directory.
       - name: Prepare Release Files
         run: |
           mkdir dist
           mv build/birdnet-vamp.so dist/birdnet-vamp.so
           cp birdnet_plugin/birdnet_run.py dist/birdnet_run.py
           cp birdnet_plugin/birdnet_labels.csv dist/birdnet_labels.csv
+
           mv build/perch-vamp.so dist/perch-vamp.so
           cp perch_plugin/perch_run.py dist/perch_run.py
           cp perch_plugin/perch_labels.csv dist/perch_labels.csv
+
           mv build/surfperch-vamp.so dist/surfperch-vamp.so
           cp surfperch_plugin/surfperch_run.py dist/surfperch_run.py
           cp surfperch_plugin/reef_labels.csv dist/reef_labels.csv
 
-      # ── Step 5: Upload the dist/ folder as a workflow artifact ───────────────
-      # upload-artifact zips the folder contents automatically, producing:
-      #   bioacoustic-vamp-pack-ubuntu-latest.zip (flat, no subfolders inside)
+      # ── Step 6: Check runtime dependencies ──────────────────────────────────
+      # Expected: libc.so.6, libm.so.6, ld-linux-x86-64.so.2.
+      # Ideally not present: libvamp-sdk.so, libstdc++.so.6, libgcc_s.so.1.
+      - name: Check dynamic dependencies
+        run: |
+          echo "birdnet-vamp.so"
+          ldd dist/birdnet-vamp.so || true
+          echo ""
+
+          echo "perch-vamp.so"
+          ldd dist/perch-vamp.so || true
+          echo ""
+
+          echo "surfperch-vamp.so"
+          ldd dist/surfperch-vamp.so || true
+
+      # ── Step 7: Upload the dist/ folder as a workflow artifact ──────────────
+      # upload-artifact zips the folder contents automatically.
       # This artifact is available for download from the Actions run summary.
       - name: Upload Plugin Pack
         uses: actions/upload-artifact@v7
         with:
-          name: bioacoustic-vamp-pack-${{ matrix.os }}
+          name: bioacoustic-vamp-pack-linux_x86_64
           path: dist/
 
-      # ── Step 6: Publish GitHub Release ──────────────────────────────────────
+      # ── Step 8: Publish GitHub Release ──────────────────────────────────────
       # Only runs when the workflow was triggered by a version tag (e.g. v1.2.0).
-      # Creates an explicit .zip (with the OS name) from dist/ and attaches it
-      # to the Release. The zip -j flag flattens the paths so there are no
-      # subfolders inside the archive.
-      - name: Create Release and Upload Assets
+      # Creates an explicit .zip from dist/ and attaches it to the Release.
+      # The zip -j flag flattens the paths so there are no subfolders inside
+      # the archive.
+      - name: Create Release Zip
         if: startsWith(github.ref, 'refs/tags/')
         run: |
-          cd dist && zip -j ../bioacoustic-vamp-pack-${{ matrix.os }}.zip *
+          cd dist && zip -j ../bioacoustic-vamp-pack-linux_x86_64.zip *
 
       - name: Upload to GitHub Release
         uses: softprops/action-gh-release@v3
@@ -115,8 +133,12 @@ jobs:
         with:
           body: |
             ## Installation
-            Download the zip file matching your Ubuntu version below.
+
+            Download the Linux x86_64 zip file below.
+
+            This build is intended for glibc-based Linux distributions.
+
             > Ignore the automatic *Source code (zip)* and *Source code (tar.gz)* archives generated by GitHub — they do not contain the compiled plugins.
-          files: bioacoustic-vamp-pack-${{ matrix.os }}.zip
+          files: bioacoustic-vamp-pack-linux_x86_64.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
