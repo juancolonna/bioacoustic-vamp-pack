@@ -2,7 +2,7 @@
 # GitHub Actions Workflow: C++ Compilation
 #
 # Builds the Bioacoustic VAMP Plugin Pack (BirdNET + Perch + SurfPerch) as shared
-# libraries (.so files) on Ubuntu 22.04 and optionally publishes them as a
+# libraries (.so files) on Ubuntu 24.04 and optionally publishes them as a
 # GitHub Release when a version tag is pushed.
 #
 # Prof. Juan G. Colonna, IComp, UFAM.
@@ -28,7 +28,7 @@ permissions:
 # ── Jobs ──────────────────────────────────────────────────────────────────────
 jobs:
   build:
-    # Build on Ubuntu 22.04 to avoid the moving target of ubuntu-latest.
+    # Build on Ubuntu 24.04 to avoid the moving target of ubuntu-latest.
     # This helps keep the generated Linux x86_64 binaries more predictable.
     strategy:
       matrix:
