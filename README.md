@@ -27,7 +27,7 @@ Detections appear as labeled regions directly on the label track (Audacity) or a
 
 - **BirdNET v2.4 Plugin**: Automatic bird species detection using BirdNET v2.4 (TensorFlow backend)
   - Nine configurable parameters:
-    - **Confidence Threshold** — minimum confidence score to report a detection (default: 25%, interval [1,99])
+    - **Confidence Threshold** — minimum confidence score to report a detection (default: 25%, interval [1:99])
     - **Top K Species** — maximum number of species candidates per segment (default: 10)
     - **Stride (s)** — sliding window step size in seconds (default: 3.0, interval [1.0,3.0])
     - **High-pass cutoff frequency** — minimum frequency for the bandpass filter in Hz (default: 0)
@@ -35,7 +35,7 @@ Detections appear as labeled regions directly on the label track (Audacity) or a
     - **Latitude** — latitude for geographic species filtering; 0.0 = disabled (default: 0.0)
     - **Longitude** — longitude for geographic species filtering; 0.0 = disabled (default: 0.0)
     - **Week of the Year** — week number (1–52) for seasonal filtering; 0 = disabled (default: 0)
-    - **Geographic Model Confidence** — minimum confidence for the geographic model filter (default: 3.0%, interval [1,99])
+    - **Geographic Model Confidence** — minimum confidence for the geographic model filter (default: 3.0%, interval [1:99])
 - **Perch v2 and SurfPerch v1 Plugins**: Bird species detection with improved accuracy
   - Three configurable parameters:
     - **Confidence Threshold** — minimum confidence score to report a detection (default: 25%, interval [1,99])
