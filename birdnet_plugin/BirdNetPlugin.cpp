@@ -263,7 +263,7 @@ Plugin::ParameterList BirdNetPlugin::getParameterDescriptors() const {
     p2.description  = "Maximum number of species candidates per segment";
     p2.unit         = "";
     p2.minValue     = 1.0f;
-    p2.maxValue     = 20.0f;
+    p2.maxValue     = 6522.0f;
     p2.defaultValue = 10.0f;
     p2.isQuantized  = true;
     p2.quantizeStep = 1.0f;
