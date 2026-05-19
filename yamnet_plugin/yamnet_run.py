@@ -148,7 +148,8 @@ def main():
     model = hub.load('https://tfhub.dev/google/yamnet/1')
 
     # Read audio file as mono 16 kHz waveform.
-    waveform, _ = librosa.load(wav_path, sr=16000, mono=True)
+    sample_rate = 16000
+    waveform, _ = librosa.load(wav_path, sr=sample_rate, mono=True)
     waveform = waveform.astype(np.float32, copy=False)
     waveform = waveform - np.mean(waveform)  # zero-mean normalization
     if np.max(np.abs(waveform)) > 1:
@@ -159,11 +160,12 @@ def main():
 
     patch_hop = 0.48
     patch_window = 0.96
+    audio_duration = len(waveform) / sample_rate
 
     detections = []
     for patch_idx, row in enumerate(scores):
         start_time = patch_idx * patch_hop
-        end_time = start_time + patch_window
+        end_time = min(start_time + patch_window, audio_duration)
         candidate_indices = np.where(row >= threshold)[0]
         top_indices = candidate_indices[np.argsort(row[candidate_indices])[::-1][:top_k]]
 

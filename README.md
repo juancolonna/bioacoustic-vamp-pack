@@ -1,12 +1,18 @@
 # 🎶 🐦‍⬛ Bioacoustic VAMP Plugins for Audacity and Sonic-Visualiser
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/)
-[![Audacity 3.7.7](https://img.shields.io/badge/Audacity-3.7.7-2C7ED6.svg)](https://www.audacityteam.org/)
 [![C++](https://img.shields.io/badge/C%2B%2B-supported-00599C.svg)](https://isocpp.org/)
+[![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/)
+
+[![Audacity 3.7.7](https://img.shields.io/badge/Audacity-3.7.7-2C7ED6.svg)](https://www.audacityteam.org/)
+[![Sonic-Visualiser](https://img.shields.io/badge/SonicVisualiser-5.2.1-red.svg)](https://www.sonicvisualiser.org/)
+
 [![BirdNET 2.4](https://img.shields.io/badge/BirdNET-2.4-blue.svg)](https://github.com/birdnet-team/birdnet)
-[![Perch 2](https://img.shields.io/badge/Perch-2-green.svg)](https://www.kaggle.com/models/google/perch)
-[![SurfPerch 1](https://img.shields.io/badge/SurfPerch-1-orange.svg)](https://www.kaggle.com/models/google/surfperch)
+[![Perch 2](https://img.shields.io/badge/Perch-2.0-green.svg)](https://www.kaggle.com/models/google/perch)
+[![SurfPerch 1](https://img.shields.io/badge/SurfPerch-1.0-orange.svg)](https://www.kaggle.com/models/google/surfperch)
+[![YamNet 1](https://img.shields.io/badge/YamNet-1.0-lightgreen.svg)](https://www.tensorflow.org/hub/tutorials/yamnet)
+
+
 
 A collection of Bioacoustic VAMP plugins for [Audacity](https://www.audacityteam.org/) and/or [Sonic-Visualiser](https://sonicvisualiser.org/) that run various bioacoustic models to automatically detect and label sounds in audio recordings.
 
@@ -14,6 +20,7 @@ This repository includes plugins for:
 - **BirdNET v2.4**: Automatic bird species detection
 - **Perch v2**: Bird species detection with improved accuracy
 - **SurfPerch v1**: Reef soundscape classification (anthropophony, biophony, geophony)
+- **YamNet v1**: General audio event classes from the AudioSet-YouTube corpus including biophony
 
 Detections appear as labeled regions directly on the label track (Audacity) or as an annotation layer (Sonic-Visualiser), with the species/sound name and confidence score. Consecutive or overlapping detections of the same type are automatically merged into a single label.
 
