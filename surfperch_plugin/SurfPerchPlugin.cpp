@@ -30,6 +30,7 @@
 #include <cmath>
 #include <fstream>
 #include <sstream>
+#include <iostream>
 #include <vamp/vamp.h>
 #include <vamp-sdk/PluginAdapter.h>
 
@@ -56,7 +57,16 @@ SurfPerchPlugin::~SurfPerchPlugin() {}
 
 // ── Initialisation ───────────────────────────────────────────────────────────
 
-bool SurfPerchPlugin::initialise(size_t channels, size_t, size_t blockSize) {
+bool SurfPerchPlugin::initialise(size_t channels, size_t stepSize, size_t blockSize) {
+    // Verify block and step size are equal (no overlap allowed) 
+    if (stepSize != blockSize) {
+        std::cerr << "Unsupported VAMP block configuration. "
+            << "stepSize and blockSize must be equal, but got "
+            << "stepSize=" << stepSize
+            << ", blockSize=" << blockSize
+            << "." << std::endl;
+        return false;
+    }
     m_blockSize = (int)blockSize;
     m_channels  = (int)channels;
     m_audioBuffer.clear();
@@ -229,8 +239,8 @@ SurfPerchPlugin::parseJSON(const std::string& json) const
 
 // ── Preferred block and step size ────────────────────────────────────────────
 
-size_t SurfPerchPlugin::getPreferredBlockSize() const { return 1024; }
-size_t SurfPerchPlugin::getPreferredStepSize()  const { return 1024; }
+size_t SurfPerchPlugin::getPreferredBlockSize() const { return 256; }
+size_t SurfPerchPlugin::getPreferredStepSize()  const { return 256; }
 
 // ── Configurable parameters ──────────────────────────────────────────────────
 

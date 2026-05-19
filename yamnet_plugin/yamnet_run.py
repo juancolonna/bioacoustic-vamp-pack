@@ -9,10 +9,10 @@
 # ]
 # ///
 """
-yamnet_run.py — YamNet v1.0 inference script for the Audacity or Sonic-Visualiser VAMP plugin.
+yamnet_run.py — YAMNet v1.0 inference script for the Audacity or Sonic-Visualiser VAMP plugin.
  
-This script is called by the VAMP plugin (YamNetPlugin.cpp) as a subprocess.
-It loads a YamNet v1.0 acoustic model, runs event detection on a WAV file,
+This script is called by the VAMP plugin (YAMNetPlugin.cpp) as a subprocess.
+It loads a YAMNet v1.0 acoustic model, runs event detection on a WAV file,
 and prints the predictions as a JSON array to stdout.
  
 Consecutive or overlapping detections of the same acoustic event are merged into a
@@ -20,13 +20,12 @@ single detection spanning from the first to the last segment, with confidence
 computed as the average across all merged segments.
  
 Usage:
-    uv run yamnet_run.py <wav_path> [threshold] [top_k] [stride]
+    uv run yamnet_run.py <wav_path> [threshold] [top_k]
  
 Arguments:
     wav_path   : Path to the input WAV file.
     threshold  : Minimum confidence score to report a detection (default: 25.0%, interval: 1-99).
     top_k      : Maximum number of acoustic events to consider per segment (default: 10).
-    stride     : Sliding window step in seconds, in range [1.0, 5.0] (default: 5.0).
  
 Output:
     JSON array of detections, each containing:
@@ -140,11 +139,11 @@ def main():
     wav_path  = sys.argv[1]
     # Convert threshold from percentage to 0..0.99
     threshold = (float(sys.argv[2]) if len(sys.argv) > 2 else 25.0) / 100.0 
-    top_k     = int(sys.argv[3])    if len(sys.argv) > 3 else 5
+    top_k     = int(sys.argv[3])    if len(sys.argv) > 3 else 10
 
     labels = load_labels('yamnet_labels.csv')
 
-    # Load YamNet v1.0 acoustic model with TensorFlow backend
+    # Load YAMNet v1.0 acoustic model with TensorFlow backend
     model = hub.load('https://tfhub.dev/google/yamnet/1')
 
     # Read audio file as mono 16 kHz waveform.

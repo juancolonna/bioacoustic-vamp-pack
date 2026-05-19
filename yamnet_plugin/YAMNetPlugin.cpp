@@ -1,5 +1,5 @@
 /**
- * YamNetPlugin.cpp — VAMP plugin implementation for acoustic events detection with YamNet.
+ * YAMNetPlugin.cpp — VAMP plugin implementation for acoustic events detection with YAMNet.
  *
  * Processing strategy:
  *   1. process()              — accumulates all input samples into m_audioBuffer.
@@ -23,13 +23,14 @@
  * License: MIT
  */
 
-#include "YamNetPlugin.h"
+#include "YAMNetPlugin.h"
 
 #include <cstdio>
 #include <cstdint>
 #include <cmath>
 #include <fstream>
 #include <sstream>
+#include <iostream>
 #include <vamp/vamp.h>
 #include <vamp-sdk/PluginAdapter.h>
 
@@ -37,11 +38,11 @@ using namespace Vamp;
 
 // ── Constructor / Destructor ─────────────────────────────────────────────────
 
-YamNetPlugin::YamNetPlugin(float inputSampleRate)
+YAMNetPlugin::YAMNetPlugin(float inputSampleRate)
     : Plugin(inputSampleRate)
     , m_blockSize(0)
     , m_threshold(25.0f)
-    , m_topK(5)
+    , m_topK(10)
 {
     const char* vampPath = getenv("VAMP_PATH");
 
@@ -51,25 +52,34 @@ YamNetPlugin::YamNetPlugin(float inputSampleRate)
     m_wavPath    = pluginDir + "/yamnet_analysis.wav";
 }
 
-YamNetPlugin::~YamNetPlugin() {}
+YAMNetPlugin::~YAMNetPlugin() {}
 
 // ── Initialisation ───────────────────────────────────────────────────────────
 
-bool YamNetPlugin::initialise(size_t channels, size_t, size_t blockSize) {
+bool YAMNetPlugin::initialise(size_t channels, size_t stepSize, size_t blockSize) {
+    // Verify block and step size are equal (no overlap allowed) 
+    if (stepSize != blockSize) {
+        std::cerr << "Unsupported VAMP block configuration. "
+            << "stepSize and blockSize must be equal, but got "
+            << "stepSize=" << stepSize
+            << ", blockSize=" << blockSize
+            << "." << std::endl;
+        return false;
+    }
     m_blockSize = (int)blockSize;
     m_channels  = (int)channels;
     m_audioBuffer.clear();
     return true;
 }
 
-void YamNetPlugin::reset() {
+void YAMNetPlugin::reset() {
     m_audioBuffer.clear();
 }
 
 // ── Audio accumulation ───────────────────────────────────────────────────────
 
 Plugin::FeatureSet
-YamNetPlugin::process(const float* const* inputBuffers,
+YAMNetPlugin::process(const float* const* inputBuffers,
                        Vamp::RealTime timestamp)
 {
     // Capture the start time from the first processed block
@@ -89,7 +99,7 @@ YamNetPlugin::process(const float* const* inputBuffers,
 
 // ── Full analysis at end of stream ───────────────────────────────────────────
 
-Plugin::FeatureSet YamNetPlugin::getRemainingFeatures() {
+Plugin::FeatureSet YAMNetPlugin::getRemainingFeatures() {
     FeatureSet output;
 
     if (m_audioBuffer.empty())
@@ -139,7 +149,7 @@ Plugin::FeatureSet YamNetPlugin::getRemainingFeatures() {
 
 // ── WAV writer (32 bit mono) ─────────────────────────────────────────────
 
-void YamNetPlugin::writeWAV(const std::string& path,
+void YAMNetPlugin::writeWAV(const std::string& path,
                            const float* samples,
                            int n,
                            int sr) const
@@ -181,8 +191,8 @@ void YamNetPlugin::writeWAV(const std::string& path,
 
 // ── Minimal JSON parser ──────────────────────────────────────────────────────
 
-std::vector<YamNetPlugin::Detection>
-YamNetPlugin::parseJSON(const std::string& json) const
+std::vector<YAMNetPlugin::Detection>
+YAMNetPlugin::parseJSON(const std::string& json) const
 {
     std::vector<Detection> detections;
     size_t pos = 0;
@@ -227,12 +237,12 @@ YamNetPlugin::parseJSON(const std::string& json) const
 
 // ── Preferred block and step size ────────────────────────────────────────────
 
-size_t YamNetPlugin::getPreferredBlockSize() const { return 256; }
-size_t YamNetPlugin::getPreferredStepSize()  const { return 256; }
+size_t YAMNetPlugin::getPreferredBlockSize() const { return 256; }
+size_t YAMNetPlugin::getPreferredStepSize()  const { return 256; }
 
 // ── Configurable parameters ──────────────────────────────────────────────────
 
-Plugin::ParameterList YamNetPlugin::getParameterDescriptors() const {
+Plugin::ParameterList YAMNetPlugin::getParameterDescriptors() const {
     ParameterDescriptor p{};
     p.identifier   = "threshold";
     p.name         = "Confidence Threshold";
@@ -250,41 +260,41 @@ Plugin::ParameterList YamNetPlugin::getParameterDescriptors() const {
     p2.unit         = "";
     p2.minValue     = 1.0f;
     p2.maxValue     = 521.0f;
-    p2.defaultValue = 5.0f;
+    p2.defaultValue = 10.0f;
     p2.isQuantized  = true;
     p2.quantizeStep = 1.0f;
 
     return { p, p2 };
 }
 
-float YamNetPlugin::getParameter(std::string id) const {
+float YAMNetPlugin::getParameter(std::string id) const {
     if (id == "threshold") return m_threshold;
     if (id == "top_k")     return (float)m_topK;
     return 0.0f;
 }
 
-void YamNetPlugin::setParameter(std::string id, float value) {
+void YAMNetPlugin::setParameter(std::string id, float value) {
     if (id == "threshold") m_threshold = value;
     if (id == "top_k")     m_topK = (int)value;
 }
 
 // ── VAMP metadata ────────────────────────────────────────────────────────────
 
-std::string YamNetPlugin::getIdentifier()    const { return "yamnet-vamp"; }
-std::string YamNetPlugin::getName()          const { return "YamNet v1.0"; }
-std::string YamNetPlugin::getDescription()   const { return "Acoustic events detection using YamNet v1.0"; }
-std::string YamNetPlugin::getMaker()         const { return "Bioacoustics"; }
-std::string YamNetPlugin::getCopyright()     const { return "MIT License — Prof. Dr. Juan G. Colonna <github.com/juancolonna>"; }
-int         YamNetPlugin::getPluginVersion() const { return 1; }
+std::string YAMNetPlugin::getIdentifier()    const { return "yamnet-vamp"; }
+std::string YAMNetPlugin::getName()          const { return "YAMNet v1.0"; }
+std::string YAMNetPlugin::getDescription()   const { return "Acoustic events detection using YAMNet v1.0"; }
+std::string YAMNetPlugin::getMaker()         const { return "Bioacoustics"; }
+std::string YAMNetPlugin::getCopyright()     const { return "MIT License — Prof. Dr. Juan G. Colonna <github.com/juancolonna>"; }
+int         YAMNetPlugin::getPluginVersion() const { return 1; }
 
-Plugin::InputDomain YamNetPlugin::getInputDomain() const {
+Plugin::InputDomain YAMNetPlugin::getInputDomain() const {
     return TimeDomain;
 }
 
-Plugin::OutputList YamNetPlugin::getOutputDescriptors() const {
+Plugin::OutputList YAMNetPlugin::getOutputDescriptors() const {
     OutputDescriptor d;
     d.identifier       = "detections";
-    d.name             = "YamNet v1.0 Detections";
+    d.name             = "YAMNet v1.0 Detections";
     d.description      = "Detected acoustic events with confidence score and timestamp";
     d.unit             = "Events (confidence %)";
     d.hasFixedBinCount = true;
@@ -299,6 +309,6 @@ Plugin::OutputList YamNetPlugin::getOutputDescriptors() const {
 const VampPluginDescriptor*
 vampGetPluginDescriptor(unsigned int version, unsigned int index) {
     if (version < 1 || index > 0) return nullptr;
-    static Vamp::PluginAdapter<YamNetPlugin> adapter;
+    static Vamp::PluginAdapter<YAMNetPlugin> adapter;
     return adapter.getDescriptor();
 }

@@ -4,7 +4,7 @@
 #   - birdnet-vamp.so     (BirdNET inference plugin)
 #   - perch-vamp.so       (Perch inference plugin)
 #   - surfperch-vamp.so   (SurfPerch inference plugin)
-#   - yamnet-vamp.so      (YamNet inference plugin)
+#   - yamnet-vamp.so      (YAMNet inference plugin)
 #
 # The build is configured to improve binary portability on Linux x86_64
 # glibc-based distributions by:

@@ -1,8 +1,8 @@
 /**
- * YamNetPlugin.h — VAMP plugin header for acoustic event detection using YamNet v1.0.
+ * YAMNetPlugin.h — VAMP plugin header for acoustic event detection using YAMNet v1.0.
  *
  * This plugin accumulates audio samples during processing, writes them to a
- * temporary WAV file, and invokes the YamNet inference script (yamnet_run.py)
+ * temporary WAV file, and invokes the YAMNet inference script (yamnet_run.py)
  * via a Python subprocess. Detections are returned as labeled features with
  * timestamps, visible as label tracks in Audacity or Sonic-Visualiser.
  *
@@ -15,10 +15,10 @@
 #include <vector>
 #include <string>
 
-class YamNetPlugin : public Vamp::Plugin {
+class YAMNetPlugin : public Vamp::Plugin {
 public:
-    YamNetPlugin(float inputSampleRate);
-    virtual ~YamNetPlugin();
+    YAMNetPlugin(float inputSampleRate);
+    virtual ~YAMNetPlugin();
 
     // ── VAMP metadata ────────────────────────────────────────────────────────
     std::string getIdentifier()    const override;
@@ -56,7 +56,7 @@ private:
                   const float* samples,
                   int n, int sr) const;
 
-    // Holds a single YamNet detection parsed from JSON output
+    // Holds a single YAMNet detection parsed from JSON output
     struct Detection {
         std::string species;     // scientific name
         float       confidence;  // average confidence score in %

@@ -1,7 +1,7 @@
 # ──────────────────────────────────────────────────────────────────────────────
 # GitHub Actions Workflow: C++ Compilation
 #
-# Builds the Bioacoustic VAMP Plugin Pack (BirdNET + Perch + SurfPerch + YamNet) as shared
+# Builds the Bioacoustic VAMP Plugin Pack (BirdNET + Perch + SurfPerch + YAMNet) as shared
 # libraries (.so files) on Ubuntu 24.04 and optionally publishes them as a
 # GitHub Release when a version tag is pushed.
 #

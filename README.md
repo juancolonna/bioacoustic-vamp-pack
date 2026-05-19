@@ -10,7 +10,7 @@
 [![BirdNET 2.4](https://img.shields.io/badge/BirdNET-2.4-blue.svg)](https://github.com/birdnet-team/birdnet)
 [![Perch 2](https://img.shields.io/badge/Perch-2.0-green.svg)](https://www.kaggle.com/models/google/perch)
 [![SurfPerch 1](https://img.shields.io/badge/SurfPerch-1.0-orange.svg)](https://www.kaggle.com/models/google/surfperch)
-[![YamNet 1](https://img.shields.io/badge/YamNet-1.0-lightgreen.svg)](https://www.tensorflow.org/hub/tutorials/yamnet)
+[![YAMNet 1](https://img.shields.io/badge/YAMNet-1.0-lightgreen.svg)](https://www.tensorflow.org/hub/tutorials/yamnet)
 
 
 
@@ -20,7 +20,7 @@ This repository includes plugins for:
 - **BirdNET v2.4**: Automatic bird species detection
 - **Perch v2**: Bird species detection with improved accuracy
 - **SurfPerch v1**: Reef soundscape classification (anthropophony, biophony, geophony)
-- **YamNet v1**: General audio event classes from the AudioSet-YouTube corpus including biophony
+- **YAMNet v1**: General audio event classes from the AudioSet-YouTube corpus including biophony
 
 Detections appear as labeled regions directly on the label track (Audacity) or as an annotation layer (Sonic-Visualiser), with the species/sound name and confidence score. Consecutive or overlapping detections of the same type are automatically merged into a single label.
 
@@ -48,10 +48,11 @@ Detections appear as labeled regions directly on the label track (Audacity) or a
     - **Confidence Threshold** — minimum confidence score to report a detection (default: 25%, interval [1,99])
     - **Top K Species** — maximum number of species candidates per segment (default: 10)
     - **Stride (s)** — sliding window step size in seconds (default: 3.0, interval [1.0,3.0])
-- **YamNet v1 Plugin**: General audio events detection
+- **YAMNet v1 Plugin**: General audio event detection using YAMNet.
   - Only two configurable parameters:
     - **Confidence Threshold** — minimum confidence score to report a detection (default: 25%, interval [1,99])
-    - **Top K Species** — maximum number of species candidates per segment (default: 10)
+    - **Top K Events** — maximum number of acoustic events per segment (default: 10)
+
 - Works on full recordings or selected segments
 - Consecutive and overlapping detections of the same type are merged automatically
 - Optional geographic and seasonal filtering using BirdNET's built-in geo model (BirdNET plugin only)
@@ -112,7 +113,7 @@ The plugins will appear in the Analyze menu (Audacity) or Transform menu (Sonic-
 
 1. Open an audio file in Audacity (**File → Open**)
 2. Optionally select a specific region of the track to analyze
-3. Go to **Analyze → Bioacoustics** and chose the desired plugin
+3. Go to **Analyze → Bioacoustics** and choose the desired plugin
 4. Adjust parameters if desired
 5. Click **OK** and wait for the analysis to complete
 6. Detections appear as labeled regions on a new label track
@@ -121,7 +122,7 @@ The plugins will appear in the Analyze menu (Audacity) or Transform menu (Sonic-
 
 1. Open an audio file in Sonic-Visualiser (**File → Open**)
 2. Optionally select a specific region of the track to analyze
-3. Go to **Transform → Analysis by Maker → Bioacoustics** and chose the desired plugin
+3. Go to **Transform → Analysis by Maker → Bioacoustics** and choose the desired plugin
 4. Adjust parameters if desired
 5. Click **OK** and wait for the analysis to complete
 6. Detections appear as labeled regions on a new label layer
@@ -149,17 +150,18 @@ Where `XX%` is the average confidence score across all merged segments.
 
 ## How it works
 
-1. When a plugin (BirdNET, Perch, or SurfPerch) is triggered, the VAMP plugin accumulates all audio samples into a buffer
+1. When a plugin (BirdNET, Perch, SurfPerch, or YAMNet) is triggered, the VAMP plugin accumulates all audio samples into a buffer
 2. At the end of the stream, it writes the buffer to a temporary WAV file
-3. It invokes the corresponding Python script (`birdnet_run.py`, `perch_run.py`, or `surfperch_run.py`) as a subprocess using the Python interpreter from the `uv` virtual environment
-4. The Python script runs the respective model inference and returns detections as a JSON array via stdout
-5. Consecutive or overlapping detections of the same type are merged into single labels
-6. The plugin reads the JSON, creates VAMP features, and displays them as labeled regions in Audacity or Sonic-Visualiser
-7. The temporary WAV file is deleted after processing
+3. Audio is mixed to mono and resampled by each Python script to the sample rate required by its model.
+4. It invokes the corresponding Python script (`birdnet_run.py`, `perch_run.py`, `surfperch_run.py`, or `yamnet_run.py`) as a subprocess using the Python interpreter from the `uv` virtual environment
+5. The Python script runs the respective model inference and returns detections as a JSON array via stdout
+6. Consecutive or overlapping detections of the same type are merged into single labels
+7. The plugin reads the JSON, creates VAMP features, and displays them as labeled regions in Audacity or Sonic-Visualiser
+8. The temporary WAV file is deleted after processing
 
-## Geographic and Seasonal Filtering on BirdNET
+## Geographic and Seasonal Filtering on BirdNET only
 
-When Latitude 'and' Longitude are set to non-zero values, the plugin activates BirdNET's geographic model to filter the species list before running acoustic inference. This restricts detections to species that are realistically expected at the given location, significantly reducing false positives. Optionally, setting Week of the Year (1–52) further narrows the filter to species expected at that location during that season. For example, a migratory species present only in summer will be excluded outside its expected seasonal window.
+When Latitude and Longitude are set to non-zero values, the plugin activates BirdNET's geographic model to filter the species list before running acoustic inference. This restricts detections to species that are realistically expected at the given location, significantly reducing false positives. Optionally, setting Week of the Year (1–52) further narrows the filter to species expected at that location during that season. For example, a migratory species present only in summer will be excluded outside its expected seasonal window.
 
 The Geographic Model Confidence parameter controls how broadly the geo model selects candidate species. Lower values (e.g., 1%) include more species in the filter; higher values (e.g., 3%) apply a stricter regional filter.
 
@@ -168,9 +170,13 @@ The Geographic Model Confidence parameter controls how broadly the geo model sel
 ## Troubleshooting
 
 **Plugin does not appear in Analyze menu**
+- Make sure to use the AppImage
 - Make sure `VAMP_PATH` is set to `$HOME/vamp` (or `~/vamp`)
 - Ensure the plugin files (`.so`, `.py` and `.csv` files) are in the `~/vamp` directory
 - Restart Audacity or Sonic-Visualiser after setting VAMP_PATH
+
+**Plugin fails to initialize**
+- These plugins require the VAMP host to call them with equal `blockSize` and `stepSize`. Run Audacity or Sonic Visualiser from a terminal to see the diagnostic message.
 
 **No detections produced**
 - Try lowering the **Confidence Threshold** (e.g., 10%)
