@@ -227,8 +227,8 @@ YamNetPlugin::parseJSON(const std::string& json) const
 
 // ── Preferred block and step size ────────────────────────────────────────────
 
-size_t YamNetPlugin::getPreferredBlockSize() const { return 1024; }
-size_t YamNetPlugin::getPreferredStepSize()  const { return 1024; }
+size_t YamNetPlugin::getPreferredBlockSize() const { return 256; }
+size_t YamNetPlugin::getPreferredStepSize()  const { return 256; }
 
 // ── Configurable parameters ──────────────────────────────────────────────────
 

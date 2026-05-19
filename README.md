@@ -48,6 +48,10 @@ Detections appear as labeled regions directly on the label track (Audacity) or a
     - **Confidence Threshold** — minimum confidence score to report a detection (default: 25%, interval [1,99])
     - **Top K Species** — maximum number of species candidates per segment (default: 10)
     - **Stride (s)** — sliding window step size in seconds (default: 3.0, interval [1.0,3.0])
+- **YamNet v1 Plugin**: General audio events detection
+  - Only two configurable parameters:
+    - **Confidence Threshold** — minimum confidence score to report a detection (default: 25%, interval [1,99])
+    - **Top K Species** — maximum number of species candidates per segment (default: 10)
 - Works on full recordings or selected segments
 - Consecutive and overlapping detections of the same type are merged automatically
 - Optional geographic and seasonal filtering using BirdNET's built-in geo model (BirdNET plugin only)
