@@ -154,7 +154,7 @@ def main():
     if np.max(np.abs(waveform)) > 1:
         waveform = waveform / np.max(np.abs(waveform))  # peak normalization
 
-    scores, _, _ = model(waveform[:2*15360])
+    scores, _, _ = model(waveform)
     scores = scores.numpy()
 
     patch_hop = 0.48
