@@ -6,3 +6,4 @@ sonic-visualiser.sh
 __pycache__/
 *.pyc
 create_birdnet_csv.py
+Release_notes.md
