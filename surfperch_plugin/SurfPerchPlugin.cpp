@@ -15,9 +15,6 @@
  *
  * Paths are resolved from the VAMP_PATH environment variable, which points to
  * the directory containing both the plugin (.so) and the inference script (.py).
- * The ~/.local/bin path (where uv lives) is included in PATH by the .desktop
- * shortcut created by audacity.sh / sonic-visualiser.sh, so `uv run` is always
- * found regardless of how the application was launched.
  *
  * Author: Prof. Dr. Juan G. Colonna <github.com/juancolonna>
  * License: MIT
