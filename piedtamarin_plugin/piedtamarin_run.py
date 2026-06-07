@@ -7,6 +7,7 @@
 #   "setuptools<82",
 #   "librosa",
 #   "sauim-detector",
+#   "scikit-learn==1.8.0",
 # ]
 # ///
 """
@@ -67,7 +68,7 @@ tf.experimental.numpy.experimental_enable_numpy_behavior()
 def main():
     wav_path = sys.argv[1]
     stride = float(sys.argv[2]) if len(sys.argv) > 2 else 5.0
-    stride = int(max(1.0, min(5.0, stride)))
+    stride = max(1.0, min(5.0, stride))
 
     embedding_model = hub.load(
         "https://www.kaggle.com/models/google/"

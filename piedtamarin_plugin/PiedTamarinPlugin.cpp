@@ -246,8 +246,7 @@ Plugin::ParameterList PiedTamarinPlugin::getParameterDescriptors() const {
     p.minValue     = 1.0f;
     p.maxValue     = 5.0f;
     p.defaultValue = 5.0f;
-    p.isQuantized  = true;
-    p.quantizeStep = 1.0f;
+    p.isQuantized  = false;
 
     return { p };
 }

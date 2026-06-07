@@ -74,6 +74,6 @@ private:
     std::string        m_wavPath;       // path to temporary WAV file
     int                m_blockSize;     // VAMP block size (samples per call)
     int                m_channels;      // number of input audio channels
-    int                m_stride;        // sliding window step in seconds (int value)
+    float              m_stride;        // sliding window step in seconds
     Vamp::RealTime     m_startTime;     // timestamp of the first processed block
 };
