@@ -10,10 +10,10 @@
 # ]
 # ///
 """
-surfperch_run.py — SurfPerch v2 inference script for the Audacity or Sonic-Visualiser VAMP plugin.
+piedtamarin_run.py — Pied Tamarin v1.0 inference script for the Audacity or Sonic-Visualiser VAMP plugin.
  
-This script is called by the VAMP plugin (SurfPerchPlugin.cpp) as a subprocess.
-It loads a SurfPerch acoustic model, runs species prediction on a WAV file,
+This script is called by the VAMP plugin (PiedTamarinPlugin.cpp) as a subprocess.
+It loads a Pied Tamarin acoustic model, runs species prediction on a WAV file,
 and prints the predictions as a JSON array to stdout.
  
 Consecutive or overlapping detections of the same species are merged into a
@@ -21,13 +21,11 @@ single detection spanning from the first to the last segment, with confidence
 computed as the average across all merged segments.
  
 Usage:
-    uv run surfperch_run.py <wav_path> [threshold] [top_k] [stride]
+    uv run piedtamarin_run.py <wav_path> [stride]
  
 Arguments:
     wav_path   : Path to the input WAV file.
-    threshold  : Minimum confidence score to report a detection (default: 25.0%, interval: 1-99).
-    top_k      : Maximum number of species to consider per segment (default: 10).
-    stride     : Sliding window step in seconds, in range [1.0, 5.0] (default: 5.0).
+    stride     : Sliding window step in seconds, in range [1, 5] (default: 5).
  
 Output:
     JSON array of detections, each containing:
@@ -69,7 +67,7 @@ tf.experimental.numpy.experimental_enable_numpy_behavior()
 def main():
     wav_path = sys.argv[1]
     stride = float(sys.argv[2]) if len(sys.argv) > 2 else 5.0
-    stride = max(1.0, min(5.0, stride))
+    stride = int(max(1.0, min(5.0, stride)))
 
     embedding_model = hub.load(
         "https://www.kaggle.com/models/google/"

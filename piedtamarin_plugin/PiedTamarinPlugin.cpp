@@ -38,8 +38,6 @@ using namespace Vamp;
 PiedTamarinPlugin::PiedTamarinPlugin(float inputSampleRate)
     : Plugin(inputSampleRate)
     , m_blockSize(0)
-    // , m_threshold(25.0f)
-    // , m_topK(10)
     , m_stride(5.0f)
 {
     const char* vampPath = getenv("VAMP_PATH");
@@ -114,8 +112,6 @@ Plugin::FeatureSet PiedTamarinPlugin::getRemainingFeatures() {
     std::ostringstream cmd;
     cmd << "uv run " << m_scriptPath
         << " " << m_wavPath
-        // << " " << m_threshold
-        // << " " << m_topK
         << " " << m_stride;
 
     FILE* pipe = popen(cmd.str().c_str(), "r");
@@ -242,27 +238,6 @@ size_t PiedTamarinPlugin::getPreferredStepSize()  const { return 256; }
 // ── Configurable parameters ──────────────────────────────────────────────────
 
 Plugin::ParameterList PiedTamarinPlugin::getParameterDescriptors() const {
-    // ParameterDescriptor p{};
-    // p.identifier   = "threshold";
-    // p.name         = "Confidence Threshold";
-    // p.description  = "Minimum confidence score (%) to report a detection";
-    // p.unit         = "%";
-    // p.minValue     = 0.0f;
-    // p.maxValue     = 99.0f;
-    // p.defaultValue = 25.0f;
-    // p.isQuantized  = false;
-
-    // ParameterDescriptor p2{};
-    // p2.identifier   = "top_k";
-    // p2.name         = "Top K Species";
-    // p2.description  = "Maximum number of species candidates per segment";
-    // p2.unit         = "";
-    // p2.minValue     = 1.0f;
-    // p2.maxValue     = 38.0f;
-    // p2.defaultValue = 10.0f;
-    // p2.isQuantized  = true;
-    // p2.quantizeStep = 1.0f;
-
     ParameterDescriptor p{};
     p.identifier   = "stride";
     p.name         = "Stride";
@@ -271,22 +246,18 @@ Plugin::ParameterList PiedTamarinPlugin::getParameterDescriptors() const {
     p.minValue     = 1.0f;
     p.maxValue     = 5.0f;
     p.defaultValue = 5.0f;
-    p.isQuantized  = false;
+    p.isQuantized  = true;
+    p.quantizeStep = 1.0f;
 
-    // return { p, p2, p3 };
     return { p };
 }
 
 float PiedTamarinPlugin::getParameter(std::string id) const {
-    // if (id == "threshold") return m_threshold;
-    // if (id == "top_k")     return (float)m_topK;
     if (id == "stride")    return m_stride;
     return 0.0f;
 }
 
 void PiedTamarinPlugin::setParameter(std::string id, float value) {
-    // if (id == "threshold") m_threshold = value;
-    // if (id == "top_k")     m_topK = (int)value;
     if (id == "stride")    m_stride = value;
 }
 
@@ -294,7 +265,7 @@ void PiedTamarinPlugin::setParameter(std::string id, float value) {
 
 std::string PiedTamarinPlugin::getIdentifier()    const { return "piedtamarin-vamp"; }
 std::string PiedTamarinPlugin::getName()          const { return "Pied Tamarin v1.0"; }
-std::string PiedTamarinPlugin::getDescription()   const { return "Reef coral sounds detection using Pied Tamarin v1.0"; }
+std::string PiedTamarinPlugin::getDescription()   const { return "Pied Tamarin calls detection v1.0"; }
 std::string PiedTamarinPlugin::getMaker()         const { return "Bioacoustics"; }
 std::string PiedTamarinPlugin::getCopyright()     const { return "MIT License — Prof. Dr. Juan G. Colonna <github.com/juancolonna>"; }
 int         PiedTamarinPlugin::getPluginVersion() const { return 1; }
@@ -308,7 +279,7 @@ Plugin::OutputList PiedTamarinPlugin::getOutputDescriptors() const {
     d.identifier       = "detections";
     d.name             = "Pied Tamarin Detector v1.0";
     d.description      = "Detected pied tamarin calls with Perch embeddings and One-Class SVM.";
-    d.unit             = "Sounds (confidence %)";
+    d.unit             = "Score (confidence %)";
     d.hasFixedBinCount = true;
     d.binCount         = 1;
     d.sampleType       = OutputDescriptor::VariableSampleRate;
