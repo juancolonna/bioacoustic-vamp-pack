@@ -6,7 +6,7 @@
 #   "tensorflow_hub",
 #   "setuptools<82",
 #   "librosa",
-#   "sauim-detector",
+#   "sauim-detector==0.1.6",
 #   "scikit-learn==1.8.0",
 # ]
 # ///
