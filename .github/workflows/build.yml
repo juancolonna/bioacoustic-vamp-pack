@@ -1,7 +1,7 @@
 # ──────────────────────────────────────────────────────────────────────────────
 # GitHub Actions Workflow: C++ Compilation
 #
-# Builds the Bioacoustic VAMP Plugin Pack (BirdNET + Perch + SurfPerch + YAMNet) as shared
+# Builds the Bioacoustic VAMP Plugin Pack (BirdNET + Perch + SurfPerch + YAMNet + PiedTamarin) as shared
 # libraries (.so files) on Ubuntu 24.04 and optionally publishes them as a
 # GitHub Release when a version tag is pushed.
 #
@@ -63,11 +63,12 @@ jobs:
 
       # ── Step 4: Compile VAMP plugins ────────────────────────────────────────
       # Runs CMake in Release mode.
-      # The CMakeLists.txt at the repo root defines four targets:
-      #   - birdnet-vamp   -> build/birdnet-vamp.so
-      #   - perch-vamp     -> build/perch-vamp.so
-      #   - surfperch-vamp -> build/surfperch-vamp.so
-      #   - yamnet-vamp    -> build/yamnet-vamp.so
+      # The CMakeLists.txt at the repo root defines five targets:
+      #   - birdnet-vamp     -> build/birdnet-vamp.so
+      #   - perch-vamp       -> build/perch-vamp.so
+      #   - surfperch-vamp   -> build/surfperch-vamp.so
+      #   - yamnet-vamp      -> build/yamnet-vamp.so
+      #   - piedtamarin-vamp -> build/piedtamarin-vamp.so
       # -j$(nproc) parallelises the build across all available CPU cores.
       - name: Compile on Linux
         run: |
@@ -97,6 +98,9 @@ jobs:
           cp yamnet_plugin/yamnet_run.py dist/yamnet_run.py
           cp yamnet_plugin/yamnet_labels.csv dist/yamnet_labels.csv
 
+          mv build/piedtamarin-vamp.so dist/piedtamarin-vamp.so
+          cp piedtamarin_plugin/piedtamarin_run.py dist/piedtamarin_run.py
+
       # ── Step 6: Check runtime dependencies ──────────────────────────────────
       # Expected: libc.so.6, libm.so.6, ld-linux-x86-64.so.2.
       # Ideally not present: libvamp-sdk.so, libstdc++.so.6, libgcc_s.so.1.
@@ -115,6 +119,9 @@ jobs:
 
           echo "yamnet-vamp.so"
           ldd dist/yamnet-vamp.so || true
+
+          echo "piedtamarin-vamp.so"
+          ldd dist/piedtamarin-vamp.so || true
 
       # ── Step 7: Upload the dist/ folder as a workflow artifact ──────────────
       # upload-artifact zips the folder contents automatically.

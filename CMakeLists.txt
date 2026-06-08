@@ -5,6 +5,7 @@
 #   - perch-vamp.so       (Perch inference plugin)
 #   - surfperch-vamp.so   (SurfPerch inference plugin)
 #   - yamnet-vamp.so      (YAMNet inference plugin)
+#   - piedtamarin-vamp.so (PiedTamarin inference plugin)
 #
 # The build is configured to improve binary portability on Linux x86_64
 # glibc-based distributions by:
@@ -90,8 +91,9 @@ function(add_vamp_plugin target_name source_dir)
     )
 endfunction()
 
-# Build the four plugins in the package.
+# Build the five plugins in the package.
 add_vamp_plugin(birdnet-vamp birdnet_plugin)
 add_vamp_plugin(perch-vamp perch_plugin)
 add_vamp_plugin(surfperch-vamp surfperch_plugin)
 add_vamp_plugin(yamnet-vamp yamnet_plugin)
+add_vamp_plugin(piedtamarin-vamp piedtamarin_plugin)
