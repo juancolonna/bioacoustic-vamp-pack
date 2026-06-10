@@ -95,6 +95,9 @@ def main():
         stride=stride,
     )
 
+    for detection in detections:
+        detection["confidence"] = 100
+        
     print(json.dumps(detections), flush=True)
 
 
