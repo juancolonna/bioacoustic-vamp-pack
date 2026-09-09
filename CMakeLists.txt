@@ -40,8 +40,8 @@ find_library(VAMP_SDK_STATIC
     PATHS
         /usr/lib/x86_64-linux-gnu /usr/lib64 /usr/lib   # Linux
         /ucrt64/lib                                      # Windows (MSYS2 UCRT64)
-        /opt/homebrew/lib                                # NOVO: macOS (Apple Silicon, Homebrew)
-        /usr/local/lib                                   # NOVO: macOS (Intel, Homebrew)
+        /opt/homebrew/lib                                # macOS (Apple Silicon, Homebrew)
+        /usr/local/lib                                   # macOS (Intel, Homebrew)
     REQUIRED
 )
 
@@ -67,13 +67,12 @@ function(add_vamp_plugin target_name source_dir)
 
     # Include the VAMP SDK headers.
     target_include_directories(${target_name} PRIVATE
-        /usr/include/vamp-sdk         # Linux
-        /ucrt64/include/vamp-sdk      # Windows (MSYS2 UCRT64) — caminho inexistente é ignorado pelo compilador
-        /opt/homebrew/include/vamp-sdk # NOVO: macOS (Apple Silicon, Homebrew)
-        /opt/homebrew/include          # NOVO: idem — Homebrew não entra no path padrão do Clang,
-                                        #       precisa do dir pai pra resolver <vamp/vamp.h>
-        /usr/local/include/vamp-sdk    # NOVO: macOS (Intel, Homebrew)
-        /usr/local/include             # NOVO: idem, mesmo motivo acima
+        /usr/include/vamp-sdk          # Linux
+        /ucrt64/include/vamp-sdk       # Windows (MSYS2 UCRT64) — caminho inexistente é ignorado pelo compilador
+        /opt/homebrew/include/vamp-sdk # macOS (Apple Silicon, Homebrew)
+        /opt/homebrew/include          # macOS
+        /usr/local/include/vamp-sdk    # macOS (Intel, Homebrew)
+        /usr/local/include             # macOS
     )
 
     # Link the plugin against the static VAMP SDK library.
@@ -87,9 +86,9 @@ function(add_vamp_plugin target_name source_dir)
     # is generally safer and more compatible for Linux plugins loaded by
     # host applications such as Audacity or Sonic Visualiser.
     #
-    # NOVO: bloco pulado inteiro no macOS (if NOT APPLE) — -Wl,--as-needed é uma flag
-    # específica do GNU ld e não existe no ld64 da Apple (quebraria o link). Também não
-    # há necessidade real dessas flags lá: o libc++ já vem embutido em todo macOS.
+    # This entire block is skipped if NOT APPLE. -Wl,--as-needed is a flag
+    # specific to GNU ld and does not exist in Apple's ld64 (it would break the link). There is
+    # also no real need for these flags there: libc++ is already built into macOS.
     if(NOT APPLE)
         target_link_options(${target_name} PRIVATE
             -static-libstdc++
@@ -98,9 +97,9 @@ function(add_vamp_plugin target_name source_dir)
         )
     endif()
 
-    # NOVO: no Windows/MinGW, libstdc++ depende do backend de threads winpthreads,
-    # que continua dinâmico (libwinpthread-1.dll) mesmo com -static-libstdc++/-static-libgcc
-    # — confirmado no ldd do CI. Linkar estático aqui evita depender dessa DLL no host final.
+    # On Windows/MinGW, libstdc++ depends on the winpthreads thread backend,
+    # which remains dynamic (libwinpthread-1.dll) even with -static-libstdc++/-static-libgcc
+    # Static linking here avoids a dependency on this DLL on the final host.
     if(WIN32)
         target_link_options(${target_name} PRIVATE -static -lwinpthread)
     endif()

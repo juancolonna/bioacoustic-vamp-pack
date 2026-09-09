@@ -2,8 +2,8 @@
 # GitHub Actions Workflow: C++ Compilation
 #
 # Builds the Bioacoustic VAMP Plugin Pack (BirdNET + Perch + SurfPerch + YAMNet + PiedTamarin) as shared
-# libraries — .so on Ubuntu 24.04, .dll on Windows (via MSYS2/MinGW), .dylib on macOS
-# (via Homebrew) — and optionally publishes them as a GitHub Release when a version tag is pushed. # ALTERADO
+# libraries: .so on Ubuntu 24.04, .dll on Windows (via MSYS2/MinGW), .dylib on macOS (via Homebrew),
+# and optionally publishes them as a GitHub Release when a version tag is pushed. 
 #
 # Prof. Juan G. Colonna, IComp, UFAM.
 #
@@ -28,13 +28,10 @@ permissions:
 # ── Jobs ──────────────────────────────────────────────────────────────────────
 jobs:
   build:
-    # ALTERADO: comentário desatualizado (mencionava só Ubuntu 24.04); a matriz agora
-    # cobre Linux (ubuntu-latest), Windows (windows-latest, via MSYS2/MinGW) e
-    # macOS (macos-latest — hoje aponta pra Apple Silicon/arm64).
     strategy:
       fail-fast: false                                     # deixa cada job terminar independente dos outros
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]   # ALTERADO: adicionado macos-latest
+        os: [ubuntu-latest, windows-latest, macos-latest]   
 
     runs-on: ${{ matrix.os }}
 
@@ -49,15 +46,15 @@ jobs:
       # ── Step 2: Install build dependencies ──────────────────────────────────
       # Linux: installs cmake, g++ (C++17 compiler), and vamp-plugin-sdk via apt.
       # Windows: installs the equivalent MinGW toolchain, cmake, ninja, and
-      # vamp-plugin-sdk via MSYS2/pacman (mingw-w64-ucrt-x86_64-* packages).   # ALTERADO
+      # vamp-plugin-sdk via MSYS2/pacman (mingw-w64-ucrt-x86_64-* packages).   
       - name: Install Dependencies (Linux)
-        if: runner.os == 'Linux'                # NOVO: só roda no job ubuntu-latest
+        if: runner.os == 'Linux'               
         run: |
           sudo apt update
           sudo apt install -y cmake g++ vamp-plugin-sdk
 
-      # NOVO: bloco inteiro — instala toolchain GCC (MinGW) + cmake + vamp-plugin-sdk via MSYS2/pacman.
-      # Mantém o mesmo compilador (GCC) usado no Linux, evitando portar o projeto para MSVC.
+      # Installs the GCC (MinGW) toolchain + CMake + vamp-plugin-sdk via MSYS2/pacman.
+      # Keeps the same compiler (GCC) used on Linux, avoiding the need to port the project to MSVC.
       - name: Install Dependencies (Windows via MSYS2)
         if: runner.os == 'Windows'
         uses: msys2/setup-msys2@v2
@@ -70,9 +67,9 @@ jobs:
             mingw-w64-ucrt-x86_64-ninja
             mingw-w64-ucrt-x86_64-vamp-plugin-sdk
 
-      # NOVO: bloco inteiro — Homebrew já vem pré-instalado nos runners macOS da GitHub.
-      # O compilador (Apple Clang) já vem com as Command Line Tools do Xcode do runner;
-      # só falta cmake e o SDK do VAMP.
+      # Homebrew comes pre-installed on GitHub's macOS runners.
+      # The compiler (Apple Clang) is included with the runner's Xcode Command Line Tools;
+      # only cmake and the VAMP SDK are missing.
       - name: Install Dependencies (macOS)
         if: runner.os == 'macOS'
         run: |
@@ -82,20 +79,20 @@ jobs:
       # The CMakeLists.txt links against libvamp-sdk.a to avoid requiring
       # libvamp-sdk.so on the user's system.
       - name: Check static VAMP SDK (Linux)
-        if: runner.os == 'Linux'                # NOVO
+        if: runner.os == 'Linux'               
         run: |
           find /usr/lib /usr/lib64 -name "libvamp-sdk.a" -print
 
-      # NOVO: equivalente no ambiente MSYS2 UCRT64
+      # Equivalent in MSYS2 UCRT64 environment
       - name: Check static VAMP SDK (Windows)
         if: runner.os == 'Windows'
         shell: msys2 {0}
         run: |
           find /ucrt64/lib -name "libvamp-sdk.a" -print
 
-      # NOVO: procura nos dois prefixos possíveis do Homebrew — só um existe por vez,
-      # dependendo da arquitetura do runner (Apple Silicon vs Intel); || true evita que
-      # o "no such directory" do caminho ausente derrube o step.
+      # Search on both possible Homebrew prefixes, but only one exists at a time,
+      # depending on the runner architecture (Apple Silicon vs. Intel); || true prevents
+      # a "no such directory" error for the missing path from causing the step to fail.
       - name: Check static VAMP SDK (macOS)
         if: runner.os == 'macOS'
         run: |
@@ -107,16 +104,16 @@ jobs:
       # birdnet-vamp / perch-vamp / surfperch-vamp / yamnet-vamp / piedtamarin-vamp
       # as build/<target>.so on Linux (make -j$(nproc)), build/<target>.dll on
       # Windows (Ninja, via cmake --build --parallel), and build/<target>.dylib
-      # on macOS (Unix Makefiles default, via cmake --build --parallel).        # ALTERADO
+      # on macOS (Unix Makefiles default, via cmake --build --parallel).        
       - name: Compile on Linux
-        if: runner.os == 'Linux'                # NOVO
+        if: runner.os == 'Linux'                
         run: |
           mkdir build && cd build
           cmake .. -DCMAKE_BUILD_TYPE=Release
           make -j$(nproc)
 
-      # NOVO: bloco inteiro — mesmo fluxo (mkdir build && cmake && build), mas com gerador Ninja,
-      # que é single-config e evita a pasta extra build/Release/ que geradores Visual Studio criam.
+      # Same workflow (mkdir build && cmake && build), but with the Ninja generator,
+      # which is single-config and avoids the extra build/Release/ folder created by Visual Studio generators.
       - name: Compile on Windows
         if: runner.os == 'Windows'
         shell: msys2 {0}
@@ -125,9 +122,9 @@ jobs:
           cmake .. -G Ninja -DCMAKE_BUILD_TYPE=Release
           cmake --build . --parallel
 
-      # NOVO: bloco inteiro — macOS não tem "nproc" (isso é GNU coreutils, não existe no BSD/macOS),
-      # por isso "cmake --build . --parallel" em vez de "make -j$(nproc)"; CMake já detecta os
-      # núcleos disponíveis sozinho, funciona igual no Windows acima.
+      # macOS doesn't have "nproc" (that's part of GNU coreutils, not BSD/macOS),
+      # so use "cmake --build . --parallel" instead of "make -j$(nproc)"; CMake automatically
+      # detects the available cores, just like on Windows.
       - name: Compile on macOS
         if: runner.os == 'macOS'
         run: |
@@ -136,10 +133,10 @@ jobs:
           cmake --build . --parallel
 
       # ── Step 5: Collect all distributable files into a staging folder ───────
-      # Gathers the compiled shared libraries (.so on Linux, .dll on Windows,      # ALTERADO
+      # Gathers the compiled shared libraries (.so on Linux, .dll on Windows,      
       # .dylib on macOS), Python inference scripts, and label files into 'dist'.
       - name: Prepare Release Files (Linux)
-        if: runner.os == 'Linux'                # NOVO
+        if: runner.os == 'Linux'                
         run: |
           mkdir dist
           mv build/birdnet-vamp.so dist/birdnet-vamp.so
@@ -161,8 +158,8 @@ jobs:
           mv build/piedtamarin-vamp.so dist/piedtamarin-vamp.so
           cp piedtamarin_plugin/piedtamarin_run.py dist/piedtamarin_run.py
 
-      # NOVO: bloco inteiro — idêntico ao de cima, mas com extensão .dll (saída nativa do CMake no Windows).
-      # ATENÇÃO: assume que o CMakeLists.txt não força manualmente a extensão ".so" na SHARED lib.
+      # Identical to the block above, but with the .dll extension (native CMake output on Windows).
+      # Assumes that CMakeLists.txt does not manually force the ".so" extension on the SHARED lib.
       - name: Prepare Release Files (Windows)
         if: runner.os == 'Windows'
         shell: msys2 {0}
@@ -187,8 +184,8 @@ jobs:
           mv build/piedtamarin-vamp.dll dist/piedtamarin-vamp.dll
           cp piedtamarin_plugin/piedtamarin_run.py dist/piedtamarin_run.py
 
-      # NOVO: bloco inteiro — idêntico aos de cima, com extensão .dylib (saída nativa do
-      # CMake pra SHARED lib no macOS, sem precisar forçar SUFFIX no CMakeLists.txt).
+      # Identical to the blocks above, but with the .dylib extension (native
+      # CMake output for SHARED libs on macOS, without needing to force a SUFFIX in CMakeLists.txt).
       - name: Prepare Release Files (macOS)
         if: runner.os == 'macOS'
         run: |
@@ -218,12 +215,12 @@ jobs:
       # Windows — expected: KERNEL32.dll, msvcrt.dll / api-ms-win-crt-*.dll.
       #         ideally not present: libstdc++-6.dll, libgcc_s_seh-1.dll (both
       #         are statically linked in via -static-libstdc++ -static-libgcc).
-      # macOS — expected: only system libs under /usr/lib/ (libc++.1.dylib,           # NOVO
+      # macOS — expected: only system libs under /usr/lib/ (libc++.1.dylib,          
       #         libSystem.B.dylib); ideally not present: any /opt/homebrew/... or
       #         /usr/local/... path, which would mean it depends on Homebrew being
       #         installed on the end user's machine.
       - name: Check dynamic dependencies (Linux)
-        if: runner.os == 'Linux'                # NOVO
+        if: runner.os == 'Linux'              
         run: |
           echo "birdnet-vamp.so"
           ldd dist/birdnet-vamp.so || true
@@ -242,7 +239,7 @@ jobs:
           echo "piedtamarin-vamp.so"
           ldd dist/piedtamarin-vamp.so || true
 
-      # NOVO: bloco inteiro — ldd também existe dentro do MSYS2, só troca .so por .dll
+      # ldd also exists in MSYS2; just replace .so with .dll
       - name: Check dynamic dependencies (Windows)
         if: runner.os == 'Windows'
         shell: msys2 {0}
@@ -264,8 +261,8 @@ jobs:
           echo "piedtamarin-vamp.dll"
           ldd dist/piedtamarin-vamp.dll || true
 
-      # NOVO: bloco inteiro — macOS não tem ldd; otool -L é o equivalente nativo
-      # (parte das Command Line Tools do Xcode, já presente no runner).
+      # macOS does not have ldd; otool -L is the native equivalent
+      # (part of the Xcode Command Line Tools, already present on the runner).
       - name: Check dynamic dependencies (macOS)
         if: runner.os == 'macOS'
         run: |
@@ -289,10 +286,9 @@ jobs:
       # ── Step 7: Upload the dist/ folder as a workflow artifact ──────────────
       # upload-artifact zips the folder contents automatically.
       # This artifact is available for download from the Actions run summary.
-      # NOVO: bloco inteiro — sem máquina Windows pra testar de verdade, isso é o que dá pra
-      # verificar em CI: confirma que cada .dll exporta o símbolo vampGetPluginDescriptor,
-      # que é o que Audacity/Sonic Visualiser procuram via GetProcAddress ao carregar o plugin.
-      # Se não exportar, o host carrega a DLL sem erro nenhum mas não lista plugin algum.
+      # Confirm that each .dll exports the vampGetPluginDescriptor symbol,
+      # which is what Audacity / Sonic Visualiser look for via GetProcAddress when loading the plugin. 
+      # If it doesn't export it, the host loads the DLL without any error but lists no plugin.
       - name: Verify VAMP entry point is exported (Windows)
         if: runner.os == 'Windows'
         shell: msys2 {0}
@@ -304,9 +300,7 @@ jobs:
               || { echo "MISSING vampGetPluginDescriptor export"; exit 1; }
           done
 
-      # NOVO: bloco inteiro — equivalente no macOS. Mach-O exporta símbolos por padrão
-      # (igual ELF do Linux, diferente do PE do Windows), então o risco aqui é menor,
-      # mas mantém a mesma verificação por simetria e porque também não há Mac pra testar.
+      # macOS exports symbols by default (like Linux ELF, unlike Windows PE)
       - name: Verify VAMP entry point is exported (macOS)
         if: runner.os == 'macOS'
         run: |
@@ -320,8 +314,8 @@ jobs:
       - name: Upload Plugin Pack
         uses: actions/upload-artifact@v7
         with:
-          # ALTERADO: nome dinâmico — obrigatório, pois os três jobs (Linux, Windows, macOS)
-          # rodam em paralelo no mesmo workflow run, e upload-artifact não aceita nomes duplicados.
+          # Mandatory dynamic name, as the three jobs (Linux, Windows, macOS) 
+          # run in parallel in the same workflow run, and upload-artifact does not accept duplicate names.
           name: bioacoustic-vamp-pack-${{ runner.os == 'Windows' && 'windows_x86_64' || runner.os == 'macOS' && 'macos_arm64' || 'linux_x86_64' }}
           path: dist/
 
@@ -331,18 +325,16 @@ jobs:
       # The zip -j flag flattens the paths so there are no subfolders inside
       # the archive.
       - name: Create Release Zip (Linux)
-        if: runner.os == 'Linux' && startsWith(github.ref, 'refs/tags/')   # ALTERADO: guard de OS adicionado
+        if: runner.os == 'Linux' && startsWith(github.ref, 'refs/tags/')   
         run: |
           cd dist && zip -j ../bioacoustic-vamp-pack-linux_x86_64.zip *
 
-      # NOVO: zip do lado Windows — usa o próprio zip do MSYS2, nome de arquivo separado
       - name: Create Release Zip (Windows)
         if: runner.os == 'Windows' && startsWith(github.ref, 'refs/tags/')
         shell: msys2 {0}
         run: |
           cd dist && zip -j ../bioacoustic-vamp-pack-windows_x86_64.zip *
 
-      # NOVO: zip do lado macOS — zip já vem por padrão no macOS, sem precisar de nada extra
       - name: Create Release Zip (macOS)
         if: runner.os == 'macOS' && startsWith(github.ref, 'refs/tags/')
         run: |
@@ -352,8 +344,6 @@ jobs:
         uses: softprops/action-gh-release@v3
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          # ALTERADO: lista os três zips; softprops/action-gh-release ignora arquivos que não
-          # existem no runner atual, então cada job só anexa o seu próprio zip ao Release.
           files: |
             bioacoustic-vamp-pack-linux_x86_64.zip
             bioacoustic-vamp-pack-windows_x86_64.zip
