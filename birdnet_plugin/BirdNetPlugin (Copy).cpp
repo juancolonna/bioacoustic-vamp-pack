@@ -31,15 +31,6 @@
 #include <vamp/vamp.h>
 #include <vamp-sdk/PluginAdapter.h>
 
-// Windows' MSVC only provides _popen/_pclose; POSIX systems provide popen/pclose.
-#if defined(_WIN32)
-  #define POPEN  _popen
-  #define PCLOSE _pclose
-#else
-  #define POPEN  popen
-  #define PCLOSE pclose
-#endif
-
 using namespace Vamp;
 
 // ── Constructor / Destructor ─────────────────────────────────────────────────
@@ -127,8 +118,8 @@ Plugin::FeatureSet BirdNetPlugin::getRemainingFeatures() {
 
     // Build and run the Python subprocess via uv run
     std::ostringstream cmd;
-    cmd << "uv run \"" << m_scriptPath << "\""   // quoted: paths may contain spaces (e.g. Windows "Program Files")
-        << " \"" << m_wavPath << "\""            // quoted: same reason
+    cmd << "uv run " << m_scriptPath
+        << " " << m_wavPath
         << " " << m_threshold
         << " " << m_topK
         << " " << m_stride
@@ -139,7 +130,7 @@ Plugin::FeatureSet BirdNetPlugin::getRemainingFeatures() {
         << " " << m_lon
         << " " << m_week;
 
-    FILE* pipe = POPEN(cmd.str().c_str(), "r");   // POPEN resolves to _popen on Windows, popen elsewhere
+    FILE* pipe = popen(cmd.str().c_str(), "r");
     if (!pipe) return output;
 
     // Read JSON output from stdout
@@ -147,7 +138,7 @@ Plugin::FeatureSet BirdNetPlugin::getRemainingFeatures() {
     char buf[512];
     while (fgets(buf, sizeof(buf), pipe))
         json += buf;
-    PCLOSE(pipe);   // PCLOSE resolves to _pclose on Windows, pclose elsewhere
+    pclose(pipe);
 
     // Parse detections and build VAMP features
     for (auto& d : parseJSON(json)) {
