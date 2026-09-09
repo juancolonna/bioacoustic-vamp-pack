@@ -39,7 +39,9 @@ find_library(VAMP_SDK_STATIC
     NAMES libvamp-sdk.a
     PATHS
         /usr/lib/x86_64-linux-gnu /usr/lib64 /usr/lib   # Linux
-        /ucrt64/lib                                      # NOVO: Windows (MSYS2 UCRT64)
+        /ucrt64/lib                                      # Windows (MSYS2 UCRT64)
+        /opt/homebrew/lib                                # NOVO: macOS (Apple Silicon, Homebrew)
+        /usr/local/lib                                   # NOVO: macOS (Intel, Homebrew)
     REQUIRED
 )
 
@@ -65,8 +67,13 @@ function(add_vamp_plugin target_name source_dir)
 
     # Include the VAMP SDK headers.
     target_include_directories(${target_name} PRIVATE
-        /usr/include/vamp-sdk    # Linux
-        /ucrt64/include/vamp-sdk # NOVO: Windows (MSYS2 UCRT64) — caminho inexistente é ignorado pelo compilador
+        /usr/include/vamp-sdk         # Linux
+        /ucrt64/include/vamp-sdk      # Windows (MSYS2 UCRT64) — caminho inexistente é ignorado pelo compilador
+        /opt/homebrew/include/vamp-sdk # NOVO: macOS (Apple Silicon, Homebrew)
+        /opt/homebrew/include          # NOVO: idem — Homebrew não entra no path padrão do Clang,
+                                        #       precisa do dir pai pra resolver <vamp/vamp.h>
+        /usr/local/include/vamp-sdk    # NOVO: macOS (Intel, Homebrew)
+        /usr/local/include             # NOVO: idem, mesmo motivo acima
     )
 
     # Link the plugin against the static VAMP SDK library.
@@ -79,11 +86,17 @@ function(add_vamp_plugin target_name source_dir)
     # glibc is intentionally not linked statically. Keeping glibc dynamic
     # is generally safer and more compatible for Linux plugins loaded by
     # host applications such as Audacity or Sonic Visualiser.
-    target_link_options(${target_name} PRIVATE
-        -static-libstdc++
-        -static-libgcc
-        -Wl,--as-needed
-    )
+    #
+    # NOVO: bloco pulado inteiro no macOS (if NOT APPLE) — -Wl,--as-needed é uma flag
+    # específica do GNU ld e não existe no ld64 da Apple (quebraria o link). Também não
+    # há necessidade real dessas flags lá: o libc++ já vem embutido em todo macOS.
+    if(NOT APPLE)
+        target_link_options(${target_name} PRIVATE
+            -static-libstdc++
+            -static-libgcc
+            -Wl,--as-needed
+        )
+    endif()
 
     # NOVO: no Windows/MinGW, libstdc++ depende do backend de threads winpthreads,
     # que continua dinâmico (libwinpthread-1.dll) mesmo com -static-libstdc++/-static-libgcc
