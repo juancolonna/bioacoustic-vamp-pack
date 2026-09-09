@@ -210,6 +210,21 @@ jobs:
       # ── Step 7: Upload the dist/ folder as a workflow artifact ──────────────
       # upload-artifact zips the folder contents automatically.
       # This artifact is available for download from the Actions run summary.
+      # NOVO: bloco inteiro — sem máquina Windows pra testar de verdade, isso é o que dá pra
+      # verificar em CI: confirma que cada .dll exporta o símbolo vampGetPluginDescriptor,
+      # que é o que Audacity/Sonic Visualiser procuram via GetProcAddress ao carregar o plugin.
+      # Se não exportar, o host carrega a DLL sem erro nenhum mas não lista plugin algum.
+      - name: Verify VAMP entry point is exported (Windows)
+        if: runner.os == 'Windows'
+        shell: msys2 {0}
+        run: |
+          for f in dist/*.dll; do
+            echo "== $f =="
+            objdump -p "$f" | grep -q vampGetPluginDescriptor \
+              && echo "OK: vampGetPluginDescriptor exported" \
+              || { echo "MISSING vampGetPluginDescriptor export"; exit 1; }
+          done
+
       - name: Upload Plugin Pack
         uses: actions/upload-artifact@v7
         with:
