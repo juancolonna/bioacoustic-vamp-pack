@@ -1,0 +1,151 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# GitHub Actions Workflow: C++ Compilation
+#
+# Builds the Bioacoustic VAMP Plugin Pack (BirdNET + Perch + SurfPerch + YAMNet + PiedTamarin) as shared
+# libraries (.so files) on Ubuntu 24.04 and optionally publishes them as a
+# GitHub Release when a version tag is pushed.
+#
+# Prof. Juan G. Colonna, IComp, UFAM.
+#
+# ──────────────────────────────────────────────────────────────────────────────
+name: C++ Compilation
+
+# ── Trigger conditions ────────────────────────────────────────────────────────
+on:
+  push:
+    branches: [ main ]       # Run on every push to the main branch
+    tags:
+      - 'v*'                 # Also run when a version tag is pushed (e.g. v1.0.0)
+  pull_request:
+    branches: [ main ]       # Run on pull requests targeting main
+  workflow_dispatch:         # Allow manual triggering from the Actions tab
+
+# ── Permissions ───────────────────────────────────────────────────────────────
+# 'contents: write' is required to create GitHub Releases and upload assets.
+permissions:
+  contents: write
+
+# ── Jobs ──────────────────────────────────────────────────────────────────────
+jobs:
+  build:
+    # Build on Ubuntu 24.04 to avoid the moving target of ubuntu-latest.
+    # This helps keep the generated Linux x86_64 binaries more predictable.
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      # ── Step 1: Check out the repository ────────────────────────────────────
+      # Fetches the full repository source so subsequent steps can access all
+      # files, including subfolders like birdnet_plugin/, perch_plugin/, and
+      # surfperch_plugin/.
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      # ── Step 2: Install build dependencies ──────────────────────────────────
+      # Installs the minimum set of packages required to build the plugins:
+      #   - cmake:           build system generator
+      #   - g++:             C++17 compiler
+      #   - vamp-plugin-sdk: VAMP SDK headers and libraries
+      - name: Install Dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y cmake g++ vamp-plugin-sdk
+
+      # ── Step 3: Verify static VAMP SDK library ──────────────────────────────
+      # The CMakeLists.txt links against libvamp-sdk.a to avoid requiring
+      # libvamp-sdk.so on the user's system.
+      - name: Check static VAMP SDK
+        run: |
+          find /usr/lib /usr/lib64 -name "libvamp-sdk.a" -print
+
+      # ── Step 4: Compile VAMP plugins ────────────────────────────────────────
+      # Runs CMake in Release mode.
+      # The CMakeLists.txt at the repo root defines five targets:
+      #   - birdnet-vamp     -> build/birdnet-vamp.so
+      #   - perch-vamp       -> build/perch-vamp.so
+      #   - surfperch-vamp   -> build/surfperch-vamp.so
+      #   - yamnet-vamp      -> build/yamnet-vamp.so
+      #   - piedtamarin-vamp -> build/piedtamarin-vamp.so
+      # -j$(nproc) parallelises the build across all available CPU cores.
+      - name: Compile on Linux
+        run: |
+          mkdir build && cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+
+      # ── Step 5: Collect all distributable files into a staging folder ───────
+      # Gathers the compiled .so files, Python inference scripts, and label files
+      # into a single 'dist' directory.
+      - name: Prepare Release Files
+        run: |
+          mkdir dist
+          mv build/birdnet-vamp.so dist/birdnet-vamp.so
+          cp birdnet_plugin/birdnet_run.py dist/birdnet_run.py
+          cp birdnet_plugin/birdnet_labels.csv dist/birdnet_labels.csv
+
+          mv build/perch-vamp.so dist/perch-vamp.so
+          cp perch_plugin/perch_run.py dist/perch_run.py
+          cp perch_plugin/perch_labels.csv dist/perch_labels.csv
+
+          mv build/surfperch-vamp.so dist/surfperch-vamp.so
+          cp surfperch_plugin/surfperch_run.py dist/surfperch_run.py
+          cp surfperch_plugin/reef_labels.csv dist/reef_labels.csv
+
+          mv build/yamnet-vamp.so dist/yamnet-vamp.so
+          cp yamnet_plugin/yamnet_run.py dist/yamnet_run.py
+          cp yamnet_plugin/yamnet_labels.csv dist/yamnet_labels.csv
+
+          mv build/piedtamarin-vamp.so dist/piedtamarin-vamp.so
+          cp piedtamarin_plugin/piedtamarin_run.py dist/piedtamarin_run.py
+
+      # ── Step 6: Check runtime dependencies ──────────────────────────────────
+      # Expected: libc.so.6, libm.so.6, ld-linux-x86-64.so.2.
+      # Ideally not present: libvamp-sdk.so, libstdc++.so.6, libgcc_s.so.1.
+      - name: Check dynamic dependencies
+        run: |
+          echo "birdnet-vamp.so"
+          ldd dist/birdnet-vamp.so || true
+          echo ""
+
+          echo "perch-vamp.so"
+          ldd dist/perch-vamp.so || true
+          echo ""
+
+          echo "surfperch-vamp.so"
+          ldd dist/surfperch-vamp.so || true
+
+          echo "yamnet-vamp.so"
+          ldd dist/yamnet-vamp.so || true
+
+          echo "piedtamarin-vamp.so"
+          ldd dist/piedtamarin-vamp.so || true
+
+      # ── Step 7: Upload the dist/ folder as a workflow artifact ──────────────
+      # upload-artifact zips the folder contents automatically.
+      # This artifact is available for download from the Actions run summary.
+      - name: Upload Plugin Pack
+        uses: actions/upload-artifact@v7
+        with:
+          name: bioacoustic-vamp-pack-linux_x86_64
+          path: dist/
+
+      # ── Step 8: Publish GitHub Release ──────────────────────────────────────
+      # Only runs when the workflow was triggered by a version tag (e.g. v1.2.0).
+      # Creates an explicit .zip from dist/ and attaches it to the Release.
+      # The zip -j flag flattens the paths so there are no subfolders inside
+      # the archive.
+      - name: Create Release Zip
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          cd dist && zip -j ../bioacoustic-vamp-pack-linux_x86_64.zip *
+
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v3
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: bioacoustic-vamp-pack-linux_x86_64.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

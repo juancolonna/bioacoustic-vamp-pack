@@ -2,8 +2,8 @@
 # GitHub Actions Workflow: C++ Compilation
 #
 # Builds the Bioacoustic VAMP Plugin Pack (BirdNET + Perch + SurfPerch + YAMNet + PiedTamarin) as shared
-# libraries (.so files) on Ubuntu 24.04 and optionally publishes them as a
-# GitHub Release when a version tag is pushed.
+# libraries — .so on Ubuntu 24.04, .dll on Windows (via MSYS2/MinGW) — and optionally
+# publishes them as a GitHub Release when a version tag is pushed.        # ALTERADO
 #
 # Prof. Juan G. Colonna, IComp, UFAM.
 #
@@ -28,11 +28,12 @@ permissions:
 # ── Jobs ──────────────────────────────────────────────────────────────────────
 jobs:
   build:
-    # Build on Ubuntu 24.04 to avoid the moving target of ubuntu-latest.
-    # This helps keep the generated Linux x86_64 binaries more predictable.
+    # ALTERADO: comentário desatualizado (mencionava só Ubuntu 24.04); a matriz agora
+    # cobre Linux (ubuntu-latest) e Windows (windows-latest, via MSYS2/MinGW).
     strategy:
+      fail-fast: false                          # NOVO: deixa o job Linux terminar mesmo se o Windows falhar (e vice-versa)
       matrix:
-        os: [ubuntu-latest]
+        os: [ubuntu-latest, windows-latest]      # ALTERADO: adicionado windows-latest
 
     runs-on: ${{ matrix.os }}
 
@@ -45,41 +46,72 @@ jobs:
         uses: actions/checkout@v6
 
       # ── Step 2: Install build dependencies ──────────────────────────────────
-      # Installs the minimum set of packages required to build the plugins:
-      #   - cmake:           build system generator
-      #   - g++:             C++17 compiler
-      #   - vamp-plugin-sdk: VAMP SDK headers and libraries
-      - name: Install Dependencies
+      # Linux: installs cmake, g++ (C++17 compiler), and vamp-plugin-sdk via apt.
+      # Windows: installs the equivalent MinGW toolchain, cmake, ninja, and
+      # vamp-plugin-sdk via MSYS2/pacman (mingw-w64-ucrt-x86_64-* packages).   # ALTERADO
+      - name: Install Dependencies (Linux)
+        if: runner.os == 'Linux'                # NOVO: só roda no job ubuntu-latest
         run: |
           sudo apt update
           sudo apt install -y cmake g++ vamp-plugin-sdk
 
+      # NOVO: bloco inteiro — instala toolchain GCC (MinGW) + cmake + vamp-plugin-sdk via MSYS2/pacman.
+      # Mantém o mesmo compilador (GCC) usado no Linux, evitando portar o projeto para MSVC.
+      - name: Install Dependencies (Windows via MSYS2)
+        if: runner.os == 'Windows'
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: true
+          install: >-
+            mingw-w64-ucrt-x86_64-toolchain
+            mingw-w64-ucrt-x86_64-cmake
+            mingw-w64-ucrt-x86_64-ninja
+            mingw-w64-ucrt-x86_64-vamp-plugin-sdk
+
       # ── Step 3: Verify static VAMP SDK library ──────────────────────────────
       # The CMakeLists.txt links against libvamp-sdk.a to avoid requiring
       # libvamp-sdk.so on the user's system.
-      - name: Check static VAMP SDK
+      - name: Check static VAMP SDK (Linux)
+        if: runner.os == 'Linux'                # NOVO
         run: |
           find /usr/lib /usr/lib64 -name "libvamp-sdk.a" -print
 
+      # NOVO: equivalente no ambiente MSYS2 UCRT64
+      - name: Check static VAMP SDK (Windows)
+        if: runner.os == 'Windows'
+        shell: msys2 {0}
+        run: |
+          find /ucrt64/lib -name "libvamp-sdk.a" -print
+
       # ── Step 4: Compile VAMP plugins ────────────────────────────────────────
       # Runs CMake in Release mode.
-      # The CMakeLists.txt at the repo root defines five targets:
-      #   - birdnet-vamp     -> build/birdnet-vamp.so
-      #   - perch-vamp       -> build/perch-vamp.so
-      #   - surfperch-vamp   -> build/surfperch-vamp.so
-      #   - yamnet-vamp      -> build/yamnet-vamp.so
-      #   - piedtamarin-vamp -> build/piedtamarin-vamp.so
-      # -j$(nproc) parallelises the build across all available CPU cores.
+      # The CMakeLists.txt at the repo root defines five targets, producing
+      # birdnet-vamp / perch-vamp / surfperch-vamp / yamnet-vamp / piedtamarin-vamp
+      # as build/<target>.so on Linux (make -j$(nproc)) and build/<target>.dll
+      # on Windows (Ninja, via cmake --build --parallel).                     # ALTERADO
       - name: Compile on Linux
+        if: runner.os == 'Linux'                # NOVO
         run: |
           mkdir build && cd build
           cmake .. -DCMAKE_BUILD_TYPE=Release
           make -j$(nproc)
 
+      # NOVO: bloco inteiro — mesmo fluxo (mkdir build && cmake && build), mas com gerador Ninja,
+      # que é single-config e evita a pasta extra build/Release/ que geradores Visual Studio criam.
+      - name: Compile on Windows
+        if: runner.os == 'Windows'
+        shell: msys2 {0}
+        run: |
+          mkdir build && cd build
+          cmake .. -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build . --parallel
+
       # ── Step 5: Collect all distributable files into a staging folder ───────
-      # Gathers the compiled .so files, Python inference scripts, and label files
-      # into a single 'dist' directory.
-      - name: Prepare Release Files
+      # Gathers the compiled shared libraries (.so on Linux, .dll on Windows),   # ALTERADO
+      # Python inference scripts, and label files into a single 'dist' directory.
+      - name: Prepare Release Files (Linux)
+        if: runner.os == 'Linux'                # NOVO
         run: |
           mkdir dist
           mv build/birdnet-vamp.so dist/birdnet-vamp.so
@@ -101,10 +133,40 @@ jobs:
           mv build/piedtamarin-vamp.so dist/piedtamarin-vamp.so
           cp piedtamarin_plugin/piedtamarin_run.py dist/piedtamarin_run.py
 
+      # NOVO: bloco inteiro — idêntico ao de cima, mas com extensão .dll (saída nativa do CMake no Windows).
+      # ATENÇÃO: assume que o CMakeLists.txt não força manualmente a extensão ".so" na SHARED lib.
+      - name: Prepare Release Files (Windows)
+        if: runner.os == 'Windows'
+        shell: msys2 {0}
+        run: |
+          mkdir dist
+          mv build/birdnet-vamp.dll dist/birdnet-vamp.dll
+          cp birdnet_plugin/birdnet_run.py dist/birdnet_run.py
+          cp birdnet_plugin/birdnet_labels.csv dist/birdnet_labels.csv
+
+          mv build/perch-vamp.dll dist/perch-vamp.dll
+          cp perch_plugin/perch_run.py dist/perch_run.py
+          cp perch_plugin/perch_labels.csv dist/perch_labels.csv
+
+          mv build/surfperch-vamp.dll dist/surfperch-vamp.dll
+          cp surfperch_plugin/surfperch_run.py dist/surfperch_run.py
+          cp surfperch_plugin/reef_labels.csv dist/reef_labels.csv
+
+          mv build/yamnet-vamp.dll dist/yamnet-vamp.dll
+          cp yamnet_plugin/yamnet_run.py dist/yamnet_run.py
+          cp yamnet_plugin/yamnet_labels.csv dist/yamnet_labels.csv
+
+          mv build/piedtamarin-vamp.dll dist/piedtamarin-vamp.dll
+          cp piedtamarin_plugin/piedtamarin_run.py dist/piedtamarin_run.py
+
       # ── Step 6: Check runtime dependencies ──────────────────────────────────
-      # Expected: libc.so.6, libm.so.6, ld-linux-x86-64.so.2.
-      # Ideally not present: libvamp-sdk.so, libstdc++.so.6, libgcc_s.so.1.
-      - name: Check dynamic dependencies
+      # Linux — expected: libc.so.6, libm.so.6, ld-linux-x86-64.so.2.
+      #         ideally not present: libvamp-sdk.so, libstdc++.so.6, libgcc_s.so.1.
+      # Windows — expected: KERNEL32.dll, msvcrt.dll / api-ms-win-crt-*.dll.       # NOVO
+      #         ideally not present: libstdc++-6.dll, libgcc_s_seh-1.dll (both
+      #         are statically linked in via -static-libstdc++ -static-libgcc).
+      - name: Check dynamic dependencies (Linux)
+        if: runner.os == 'Linux'                # NOVO
         run: |
           echo "birdnet-vamp.so"
           ldd dist/birdnet-vamp.so || true
@@ -123,13 +185,37 @@ jobs:
           echo "piedtamarin-vamp.so"
           ldd dist/piedtamarin-vamp.so || true
 
+      # NOVO: bloco inteiro — ldd também existe dentro do MSYS2, só troca .so por .dll
+      - name: Check dynamic dependencies (Windows)
+        if: runner.os == 'Windows'
+        shell: msys2 {0}
+        run: |
+          echo "birdnet-vamp.dll"
+          ldd dist/birdnet-vamp.dll || true
+          echo ""
+
+          echo "perch-vamp.dll"
+          ldd dist/perch-vamp.dll || true
+          echo ""
+
+          echo "surfperch-vamp.dll"
+          ldd dist/surfperch-vamp.dll || true
+
+          echo "yamnet-vamp.dll"
+          ldd dist/yamnet-vamp.dll || true
+
+          echo "piedtamarin-vamp.dll"
+          ldd dist/piedtamarin-vamp.dll || true
+
       # ── Step 7: Upload the dist/ folder as a workflow artifact ──────────────
       # upload-artifact zips the folder contents automatically.
       # This artifact is available for download from the Actions run summary.
       - name: Upload Plugin Pack
         uses: actions/upload-artifact@v7
         with:
-          name: bioacoustic-vamp-pack-linux_x86_64
+          # ALTERADO: nome dinâmico — obrigatório, pois os dois jobs (Linux e Windows) rodam
+          # em paralelo no mesmo workflow run, e upload-artifact não aceita nomes duplicados.
+          name: bioacoustic-vamp-pack-${{ runner.os == 'Windows' && 'windows_x86_64' || 'linux_x86_64' }}
           path: dist/
 
       # ── Step 8: Publish GitHub Release ──────────────────────────────────────
@@ -137,15 +223,26 @@ jobs:
       # Creates an explicit .zip from dist/ and attaches it to the Release.
       # The zip -j flag flattens the paths so there are no subfolders inside
       # the archive.
-      - name: Create Release Zip
-        if: startsWith(github.ref, 'refs/tags/')
+      - name: Create Release Zip (Linux)
+        if: runner.os == 'Linux' && startsWith(github.ref, 'refs/tags/')   # ALTERADO: guard de OS adicionado
         run: |
           cd dist && zip -j ../bioacoustic-vamp-pack-linux_x86_64.zip *
+
+      # NOVO: zip do lado Windows — usa o próprio zip do MSYS2, nome de arquivo separado
+      - name: Create Release Zip (Windows)
+        if: runner.os == 'Windows' && startsWith(github.ref, 'refs/tags/')
+        shell: msys2 {0}
+        run: |
+          cd dist && zip -j ../bioacoustic-vamp-pack-windows_x86_64.zip *
 
       - name: Upload to GitHub Release
         uses: softprops/action-gh-release@v3
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          files: bioacoustic-vamp-pack-linux_x86_64.zip
+          # ALTERADO: lista os dois zips; softprops/action-gh-release ignora arquivos que não existem
+          # no runner atual, então cada job só anexa o seu próprio zip ao Release.
+          files: |
+            bioacoustic-vamp-pack-linux_x86_64.zip
+            bioacoustic-vamp-pack-windows_x86_64.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

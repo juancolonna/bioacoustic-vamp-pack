@@ -39,7 +39,7 @@ find_library(VAMP_SDK_STATIC
     NAMES libvamp-sdk.a
     PATHS
         /usr/lib/x86_64-linux-gnu /usr/lib64 /usr/lib   # Linux
-        /ucrt64/lib                                      # NOVO: Windows (MSYS2 UCRT64)
+        /ucrt64/lib                                     # Windows (MSYS2 UCRT64)
     REQUIRED
 )
 
@@ -66,7 +66,7 @@ function(add_vamp_plugin target_name source_dir)
     # Include the VAMP SDK headers.
     target_include_directories(${target_name} PRIVATE
         /usr/include/vamp-sdk    # Linux
-        /ucrt64/include/vamp-sdk # NOVO: Windows (MSYS2 UCRT64) — caminho inexistente é ignorado pelo compilador
+        /ucrt64/include/vamp-sdk # Windows (MSYS2 UCRT64) - non-existent path is ignored by the compiler
     )
 
     # Link the plugin against the static VAMP SDK library.
