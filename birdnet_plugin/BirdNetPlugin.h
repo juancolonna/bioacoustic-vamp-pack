@@ -69,7 +69,6 @@ private:
 
     // ── Internal state ───────────────────────────────────────────────────────
     std::vector<float> m_audioBuffer;   // accumulates all input samples
-    std::string        m_pythonPath;    // path to conda env Python binary
     std::string        m_scriptPath;    // path to birdnet_run.py
     std::string        m_wavPath;       // path to temporary WAV file
     int                m_blockSize;     // VAMP block size (samples per call)
@@ -80,8 +79,8 @@ private:
     int                m_fmin; // minimum frequency for bandpass filter
     int                m_fmax; // maximum frequency for bandpass filter
     float              m_geo_model_confidence; // Minimum confidence for geographic model filtering (default: 3.0%). It olny has effect if lat parameters is set different from 90.0 or -90.0.
-    float              m_lat;           // Latitude for geographic filtering, 0.0 = disabled (default: 90.0)
-    float              m_lon;           // Longitude for geographic filtering, 0.0 = disabled (default: 0.0)
+    float              m_lat;           // Latitude for geographic filtering, 90.0 or -90.0 = disabled (default: 90.0)
+    float              m_lon;           // Longitude for geographic filtering, used only when latitude enables the filter (default: 0.0)
     int                m_week;          // Week of the year for seasonal filtering, 0 = disabled (default: 0). It olny has effect if lat and lon parameters are set.
     Vamp::RealTime     m_startTime;     // timestamp of the first processed block
 };

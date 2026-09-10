@@ -69,7 +69,6 @@ private:
 
     // ── Internal state ───────────────────────────────────────────────────────
     std::vector<float> m_audioBuffer;   // accumulates all input samples
-    std::string        m_pythonPath;    // path to conda env Python binary
     std::string        m_scriptPath;    // path to piedtamarin_run.py
     std::string        m_wavPath;       // path to temporary WAV file
     int                m_blockSize;     // VAMP block size (samples per call)
