@@ -11,6 +11,7 @@
 [![Perch 2](https://img.shields.io/badge/Perch-2.0-green.svg)](https://www.kaggle.com/models/google/perch)
 [![SurfPerch 1](https://img.shields.io/badge/SurfPerch-1.0-orange.svg)](https://www.kaggle.com/models/google/surfperch)
 [![YAMNet 1](https://img.shields.io/badge/YAMNet-1.0-lightgreen.svg)](https://www.tensorflow.org/hub/tutorials/yamnet)
+[![PiedTamarin](https://img.shields.io/badge/PiedTamarin-sauim--detector-9C27B0.svg)](https://github.com/juancolonna/Sauim)
 
 [![Linux](https://img.shields.io/badge/Linux-x86__64-FCC624.svg)](#installation)
 [![Windows](https://img.shields.io/badge/Windows-x86__64-0078D6.svg)](#installation)
@@ -23,6 +24,7 @@ This repository includes plugins for:
 - **Perch v2**: Bird species detection with improved accuracy
 - **SurfPerch v1**: Reef soundscape classification (anthropophony, biophony, geophony)
 - **YAMNet v1**: General audio event classes from the AudioSet-YouTube corpus including biophony
+- **PiedTamarin**: One-class detector for the critically endangered pied tamarin (*Saguinus bicolor*, "sauim-de-coleira"), endemic to the Manaus region of the Brazilian Amazon — built on Perch embeddings, a band-pass filter, and a One-Class SVM ([Colonna et al., 2025](https://www.biorxiv.org/content/10.1101/2025.10.11.681843))
 
 Detections appear as labeled regions directly on the label track (Audacity) or as an annotation layer (Sonic-Visualiser), with the species/sound name and confidence score. Consecutive or overlapping detections of the same type are automatically merged into a single label.
 
@@ -54,6 +56,7 @@ Detections appear as labeled regions directly on the label track (Audacity) or a
   - Only two configurable parameters:
     - **Confidence Threshold** — minimum confidence score to report a detection (default: 25%, interval [1,99])
     - **Top K Events** — maximum number of acoustic events per segment (default: 10)
+- **PiedTamarin Plugin**: One-class detection of pied tamarin (*Saguinus bicolor*) calls, using Perch embeddings, a band-pass filter, and a One-Class SVM (see [Colonna et al., 2025](https://www.biorxiv.org/content/10.1101/2025.10.11.681843) for methodology). Unlike the other plugins, this one outputs a single detected/not-detected label rather than a species list, which is why it ships without a `_labels.csv` file.
 
 - Works on full recordings or selected segments
 - Consecutive and overlapping detections of the same type are merged automatically
@@ -213,10 +216,10 @@ Where `XX%` is the average confidence score across all merged segments.
 
 ## How it works
 
-1. When a plugin (BirdNET, Perch, SurfPerch, or YAMNet) is triggered, the VAMP plugin accumulates all audio samples into a buffer
+1. When a plugin (BirdNET, Perch, SurfPerch, YAMNet, or PiedTamarin) is triggered, the VAMP plugin accumulates all audio samples into a buffer
 2. At the end of the stream, it writes the buffer to a temporary WAV file
 3. Audio is mixed to mono and resampled by each Python script to the sample rate required by its model.
-4. It invokes the corresponding Python script (`birdnet_run.py`, `perch_run.py`, `surfperch_run.py`, or `yamnet_run.py`) as a subprocess using `uv run`, which resolves and reuses the pinned model dependencies
+4. It invokes the corresponding Python script (`birdnet_run.py`, `perch_run.py`, `surfperch_run.py`, `yamnet_run.py`, or `piedtamarin_run.py`) as a subprocess using `uv run`, which resolves and reuses the pinned model dependencies
 5. The Python script runs the respective model inference and returns detections as a JSON array via stdout
 6. Consecutive or overlapping detections of the same type are merged into single labels
 7. The plugin reads the JSON, creates VAMP features, and displays them as labeled regions in Audacity or Sonic-Visualiser
@@ -243,7 +246,7 @@ The Geographic Model Confidence parameter controls how broadly the geo model sel
 
 **No detections produced**
 - Try lowering the **Confidence Threshold** (e.g., 10%)
-- Make sure the audio contains the expected sounds (bird vocalizations for BirdNET/Perch, reef sounds for SurfPerch)
+- Make sure the audio contains the expected sounds (bird vocalizations for BirdNET/Perch, reef sounds for SurfPerch, pied tamarin calls for PiedTamarin)
 - Check that `uv` is correctly installed and on your `PATH`: run `uv --version` in a new terminal
 
 **Audacity shows "not responding" during analysis**
