@@ -329,7 +329,7 @@ Plugin::ParameterList BirdNetPlugin::getParameterDescriptors() const {
     ParameterDescriptor p7{};
     p7.identifier   = "lat";
     p7.name         = "Latitude";
-    p7.description  = "Latitude for geographic filtering, 0.0 = disabled";
+    p7.description  = "Latitude for geographic filtering, 90.0 or -90.0 => disabled";
     p7.unit         = "°";
     p7.minValue     = -90.0f;
     p7.maxValue     = 90.0f;

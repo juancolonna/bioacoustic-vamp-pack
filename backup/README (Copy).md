@@ -12,11 +12,9 @@
 [![SurfPerch 1](https://img.shields.io/badge/SurfPerch-1.0-orange.svg)](https://www.kaggle.com/models/google/surfperch)
 [![YAMNet 1](https://img.shields.io/badge/YAMNet-1.0-lightgreen.svg)](https://www.tensorflow.org/hub/tutorials/yamnet)
 
-[![Linux](https://img.shields.io/badge/Linux-x86__64-FCC624.svg)](#installation)
-[![Windows](https://img.shields.io/badge/Windows-x86__64-0078D6.svg)](#installation)
-[![macOS](https://img.shields.io/badge/macOS-Apple%20Silicon-000000.svg)](#installation)
 
-A collection of Bioacoustic VAMP plugins for [Audacity](https://www.audacityteam.org/) and/or [Sonic-Visualiser](https://sonicvisualiser.org/) that run various bioacoustic models to automatically detect and label sounds in audio recordings. Prebuilt binaries are available for **Linux, Windows, and macOS (Apple Silicon)**.
+
+A collection of Bioacoustic VAMP plugins for [Audacity](https://www.audacityteam.org/) and/or [Sonic-Visualiser](https://sonicvisualiser.org/) that run various bioacoustic models to automatically detect and label sounds in audio recordings.
 
 This repository includes plugins for:
 - **BirdNET v2.4**: Automatic bird species detection
@@ -41,8 +39,8 @@ Detections appear as labeled regions directly on the label track (Audacity) or a
     - **Stride (s)** — sliding window step size in seconds (default: 3.0, interval [1.0,3.0])
     - **High-pass cutoff frequency** — minimum frequency for the bandpass filter in Hz (default: 0)
     - **Low-pass cutoff frequency** — maximum frequency for the bandpass filter in Hz (default: 15000)
-    - **Latitude** — latitude for geographic species filtering; 90.0 or -90.0 = disabled (default: 90.0)
-    - **Longitude** — longitude for geographic species filtering, used only when Latitude enables the filter (default: 0.0)
+    - **Latitude** — latitude for geographic species filtering; 0.0 = disabled (default: 0.0)
+    - **Longitude** — longitude for geographic species filtering; 0.0 = disabled (default: 0.0)
     - **Week of the Year** — week number (1–52) for seasonal filtering; 0 = disabled (default: 0)
     - **Geographic Model Confidence** — minimum confidence for the geographic model filter (default: 3.0%, interval [1:99])
 - **Perch v2 and SurfPerch v1 Plugins**: Bird species detection with improved accuracy
@@ -61,66 +59,28 @@ Detections appear as labeled regions directly on the label track (Audacity) or a
 
 ## Requirements
 
-All platforms need [uv](https://github.com/astral-sh/uv) (an extremely fast Python package and project manager, written in Rust) to run the Python inference scripts. An internet connection is required the first time a plugin runs, so `uv` can resolve the pinned model dependencies.
-
-| Platform | Additional requirement |
-|---|---|
-| 🐧 Linux | glibc as new as Ubuntu's current GitHub Actions runner image (Ubuntu 24.04 at the time of writing) or newer. Older distros such as Ubuntu 22.04 may not work — the binaries link dynamically against glibc, which is forward- but not backward-compatible. |
-| 🪟 Windows | Windows 10 or later, x86_64 |
-| 🍏 macOS | Apple Silicon (arm64). Intel Macs are not currently built. |
+- Ubuntu >= 22.04 with an internet connection 
+- [uv](https://github.com/astral-sh/uv) (an extremely fast Python package and project manager, written in Rust)
 
 ## Installation
 
-Download the release archive for your platform from the [latest release](https://github.com/juancolonna/bioacoustic-vamp-pack/releases/latest):
+### 1. Download the latest release
 
-| Platform | File |
-|---|---|
-| Linux | `bioacoustic-vamp-pack-linux_x86_64.zip` |
-| Windows | `bioacoustic-vamp-pack-windows_x86_64.zip` |
-| macOS | `bioacoustic-vamp-pack-macos_arm64.zip` |
+Download the file `bioacoustic-vamp-pack-ubuntu-latest.zip` from the [latest release](https://github.com/juancolonna/bioacoustic-vamp-pack/releases/latest) on GitHub.
 
-### 🐧 Linux
+### 2. Extract and install
 
 ```bash
-# 1. Install uv
-curl -LsSf https://astral.sh/uv/install.sh | sh
-
-# 2. Extract the plugin pack straight into ~/vamp
+unzip bioacoustic-vamp-pack-ubuntu-latest.zip
 mkdir -p ~/vamp
-unzip bioacoustic-vamp-pack-linux_x86_64.zip -d ~/vamp
+cp bioacoustic-vamp-pack-ubuntu-latest/* ~/vamp/
 ```
 
-### 🪟 Windows
-
-```powershell
-# 1. Install uv
-powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
-
-# 2. Extract the plugin pack straight into %USERPROFILE%\vamp
-mkdir $HOME\vamp
-Expand-Archive bioacoustic-vamp-pack-windows_x86_64.zip -DestinationPath $HOME\vamp
-```
-
-### 🍏 macOS
-
-```bash
-# 1. Install uv
-curl -LsSf https://astral.sh/uv/install.sh | sh
-
-# 2. Extract the plugin pack straight into ~/vamp
-mkdir -p ~/vamp
-unzip bioacoustic-vamp-pack-macos_arm64.zip -d ~/vamp
-
-# 3. Remove the quarantine flag macOS attaches to downloaded files —
-#    required, since the plugin libraries aren't notarized by Apple.
-xattr -dr com.apple.quarantine ~/vamp
-```
+This will copy all necessary plugin files (`.so` libraries, Python scripts, and label files) into your `~/vamp` directory.
 
 ## Running
 
-Set the `VAMP_PATH` environment variable to the folder from the Installation step, then launch Audacity or Sonic-Visualiser.
-
-### 🐧 Linux
+Set the VAMP_PATH environment variable and launch your installed Audacity or Sonic-Visualiser:
 
 ```bash
 rm -f ~/.config/audacity/pluginregistry.cfg
@@ -145,29 +105,6 @@ or:
 ```bash
 sudo chmod +x ~/Downloads/SonicVisualiser-5.2.1-x86_64.AppImage
 VAMP_PATH="$HOME/vamp" "$HOME/Downloads/SonicVisualiser-5.2.1-x86_64.AppImage"
-```
-
-### 🪟 Windows
-
-```powershell
-Remove-Item "$env:APPDATA\audacity\pluginregistry.cfg" -ErrorAction SilentlyContinue
-setx VAMP_PATH "$HOME\vamp"
-```
-
-> **Note:** `setx` sets the variable permanently, but it only takes effect in *new* processes. Close and reopen PowerShell (or restart your PC) before launching Audacity or Sonic Visualiser normally from the Start Menu.
-
-### 🍏 macOS
-
-macOS apps launched from Finder or the Dock don't inherit Terminal environment variables, so launch the app binary directly from Terminal instead:
-
-```bash
-export VAMP_PATH=$HOME/vamp
-/Applications/Audacity.app/Contents/MacOS/Audacity
-```
-or
-```bash
-export VAMP_PATH=$HOME/vamp
-"/Applications/Sonic Visualiser.app/Contents/MacOS/Sonic Visualiser"
 ```
 
 The plugins will appear in the Analyze menu (Audacity) or Transform menu (Sonic-Visualiser).
@@ -216,7 +153,7 @@ Where `XX%` is the average confidence score across all merged segments.
 1. When a plugin (BirdNET, Perch, SurfPerch, or YAMNet) is triggered, the VAMP plugin accumulates all audio samples into a buffer
 2. At the end of the stream, it writes the buffer to a temporary WAV file
 3. Audio is mixed to mono and resampled by each Python script to the sample rate required by its model.
-4. It invokes the corresponding Python script (`birdnet_run.py`, `perch_run.py`, `surfperch_run.py`, or `yamnet_run.py`) as a subprocess using `uv run`, which resolves and reuses the pinned model dependencies
+4. It invokes the corresponding Python script (`birdnet_run.py`, `perch_run.py`, `surfperch_run.py`, or `yamnet_run.py`) as a subprocess using the Python interpreter from the `uv` virtual environment
 5. The Python script runs the respective model inference and returns detections as a JSON array via stdout
 6. Consecutive or overlapping detections of the same type are merged into single labels
 7. The plugin reads the JSON, creates VAMP features, and displays them as labeled regions in Audacity or Sonic-Visualiser
@@ -228,15 +165,15 @@ When Latitude and Longitude are set to non-zero values, the plugin activates Bir
 
 The Geographic Model Confidence parameter controls how broadly the geo model selects candidate species. Lower values (e.g., 1%) include more species in the filter; higher values (e.g., 3%) apply a stricter regional filter.
 
-> **Note:** Geographic filtering has no effect if latitude is set to 90.0 or -90.0 (the default).
+> **Note:** Geographic filtering has no effect if latitude is set to 90.0 or -90.0.
 
 ## Troubleshooting
 
-**Plugin does not appear in Analyze / Transform menu**
-- Make sure `VAMP_PATH` is set correctly, in the same terminal session you launch Audacity or Sonic-Visualiser from (see [Running](#running) above)
-- Ensure the plugin files (library, `.py`, and `.csv` files) are directly inside the `vamp` folder, not in a subfolder
-- On macOS, make sure the quarantine flag was removed (see [Installation](#installation)) — otherwise Gatekeeper silently blocks the plugin from loading
-- Delete the plugin registry cache and restart: `~/.config/audacity/pluginregistry.cfg` (Linux), `%APPDATA%\audacity\pluginregistry.cfg` (Windows), `~/Library/Application Support/audacity/pluginregistry.cfg` (macOS)
+**Plugin does not appear in Analyze menu**
+- Make sure to use the AppImage
+- Make sure `VAMP_PATH` is set to `$HOME/vamp` (or `~/vamp`)
+- Ensure the plugin files (`.so`, `.py` and `.csv` files) are in the `~/vamp` directory
+- Restart Audacity or Sonic-Visualiser after setting VAMP_PATH
 
 **Plugin fails to initialize**
 - These plugins require the VAMP host to call them with equal `blockSize` and `stepSize`. Run Audacity or Sonic Visualiser from a terminal to see the diagnostic message.
@@ -244,7 +181,7 @@ The Geographic Model Confidence parameter controls how broadly the geo model sel
 **No detections produced**
 - Try lowering the **Confidence Threshold** (e.g., 10%)
 - Make sure the audio contains the expected sounds (bird vocalizations for BirdNET/Perch, reef sounds for SurfPerch)
-- Check that `uv` is correctly installed and on your `PATH`: run `uv --version` in a new terminal
+- Check that the `uv` is correctly installed: `curl -LsSf https://astral.sh/uv/install.sh | sh`
 
 **Audacity shows "not responding" during analysis**
 - This is expected — model inference with TensorFlow can take 10–30 seconds depending on audio length
