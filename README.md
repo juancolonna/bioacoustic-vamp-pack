@@ -3,6 +3,9 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![C++](https://img.shields.io/badge/C%2B%2B-supported-00599C.svg)](https://isocpp.org/)
 [![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/)
+[![Linux](https://img.shields.io/badge/Linux-x86__64-FCC624.svg)](#installation)
+[![Windows](https://img.shields.io/badge/Windows-x86__64-0078D6.svg)](#installation)
+[![macOS](https://img.shields.io/badge/macOS-Apple%20Silicon-000000.svg)](#installation)
 
 [![Audacity 3.7.7](https://img.shields.io/badge/Audacity-3.7.7-2C7ED6.svg)](https://www.audacityteam.org/)
 [![Sonic-Visualiser](https://img.shields.io/badge/SonicVisualiser-5.2.1-red.svg)](https://www.sonicvisualiser.org/)
@@ -13,11 +16,7 @@
 [![YAMNet 1](https://img.shields.io/badge/YAMNet-1.0-lightgreen.svg)](https://www.tensorflow.org/hub/tutorials/yamnet)
 [![PiedTamarin](https://img.shields.io/badge/PiedTamarin-sauim--detector-9C27B0.svg)](https://github.com/juancolonna/Sauim)
 
-[![Linux](https://img.shields.io/badge/Linux-x86__64-FCC624.svg)](#installation)
-[![Windows](https://img.shields.io/badge/Windows-x86__64-0078D6.svg)](#installation)
-[![macOS](https://img.shields.io/badge/macOS-Apple%20Silicon-000000.svg)](#installation)
-
-A collection of Bioacoustic VAMP plugins for [Audacity](https://www.audacityteam.org/) and/or [Sonic-Visualiser](https://sonicvisualiser.org/) that run various bioacoustic models to automatically detect and label sounds in audio recordings. Prebuilt binaries are available for **Linux, Windows, and macOS (Apple Silicon)**.
+A collection of Bioacoustic VAMP plugins for [Audacity 3.7](https://www.audacityteam.org/) and/or [Sonic-Visualiser](https://sonicvisualiser.org/) that run various bioacoustic models to automatically detect and label sounds in audio recordings. Prebuilt binaries are available for **Linux, Windows, and macOS (Apple Silicon)**.
 
 This repository includes plugins for:
 - **BirdNET v2.4**: Automatic bird species detection
