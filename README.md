@@ -68,9 +68,9 @@ All platforms need [uv](https://github.com/astral-sh/uv) (an extremely fast Pyth
 
 | Platform | Additional requirement |
 |---|---|
-| 🐧 Linux | glibc as new as Ubuntu's current GitHub Actions runner image (Ubuntu 24.04 at the time of writing) or newer. Older distros such as Ubuntu 22.04 may not work — the binaries link dynamically against glibc, which is forward- but not backward-compatible. |
-| 🪟 Windows | Windows 10 or later, x86_64 |
-| 🍏 macOS | Apple Silicon (arm64). Intel Macs are not currently built. |
+| Linux | glibc as new as Ubuntu's current GitHub Actions runner image (Ubuntu 24.04 at the time of writing) or newer. Older distros such as Ubuntu 22.04 may not work — the binaries link dynamically against glibc, which is forward- but not backward-compatible. |
+| Windows | Windows 10 or later, x86_64 |
+| macOS | Apple Silicon (arm64). Intel Macs are not currently built. |
 
 ## Installation
 
