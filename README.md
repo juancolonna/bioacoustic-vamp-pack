@@ -239,7 +239,8 @@ The Geographic Model Confidence parameter controls how broadly the geo model sel
 - Make sure `VAMP_PATH` is set correctly, in the same terminal session you launch Audacity or Sonic-Visualiser from (see [Running](#running) above)
 - Ensure the plugin files (library, `.py`, and `.csv` files) are directly inside the `vamp` folder, not in a subfolder
 - On macOS, make sure the quarantine flag was removed (see [Installation](#installation)) — otherwise Gatekeeper silently blocks the plugin from loading
-- Delete the plugin registry cache and restart: `~/.config/audacity/pluginregistry.cfg` (Linux), `%APPDATA%\audacity\pluginregistry.cfg` (Windows), `~/Library/Application Support/audacity/pluginregistry.cfg` (macOS)
+- Delete the plugin registry cache and restart: `~/.config/audacity/pluginregistry.cfg` (Linux), `%APPDATA%\audacity\pluginregistry.cfg` (Windows), `~/Library/Application Support/audacity/pluginregistry.cfg` (macOS). Audacity caches which plugins it already found and won't necessarily rescan `VAMP_PATH` on its own — deleting only this file forces a fresh scan on next launch. Don't delete `audacity.cfg` (general preferences) or `pluginsettings.cfg` (saved effect parameters) — neither affects plugin discovery.
+- If a plugin still doesn't show up after that, check **Tools → Add/Remove Plug-ins** (Audacity) — newly discovered plugins sometimes land there disabled and need to be enabled manually.
 
 **Plugin fails to initialize**
 - These plugins require the VAMP host to call them with equal `blockSize` and `stepSize`. Run Audacity or Sonic Visualiser from a terminal to see the diagnostic message.
