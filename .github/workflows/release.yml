@@ -1,0 +1,89 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# GitHub Actions Workflow: Release
+#
+# Publishes a GitHub Release containing exactly three assets:
+#   - bioacoustic-vamp-pack-linux_x86_64.zip
+#   - bioacoustic-vamp-pack-windows_x86_64.zip
+#   - bioacoustic-vamp-pack-macos_arm64.zip
+#
+# This workflow does not compile anything itself — it calls build.yml as a
+# reusable workflow to produce the three per-platform artifacts, then downloads
+# them and attaches them to the Release. Splitting build and release this way
+# means there is exactly one place that decides what ends up in a Release.
+#
+# Prof. Juan G. Colonna, IComp, UFAM.
+#
+# ──────────────────────────────────────────────────────────────────────────────
+name: Release
+
+# ── Trigger conditions ────────────────────────────────────────────────────────
+on:
+  push:
+    tags:
+      - 'v*'                 # Runs when a version tag is pushed (e.g. v1.0.0)
+  workflow_dispatch:         # Allow manual triggering from the Actions tab
+
+# ── Permissions ───────────────────────────────────────────────────────────────
+# 'contents: write' is required to create the GitHub Release and upload assets.
+permissions:
+  contents: write
+
+# ── Jobs ──────────────────────────────────────────────────────────────────────
+jobs:
+  # Runs build.yml as a reusable workflow: compiles and uploads the same three
+  # named artifacts (bioacoustic-vamp-pack-linux_x86_64 / -windows_x86_64 /
+  # -macos_arm64) it always produces. Nothing about build.yml changes when it's
+  # called this way versus triggered directly by a push to main.
+  build:
+    uses: ./.github/workflows/build.yml
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      # ── Step 1: Download the three build artifacts ────────────────────────
+      # Each was uploaded by build.yml under this exact name. Since build.yml
+      # ran as part of this same workflow run (called via `uses:` above),
+      # download-artifact can find them without needing a run-id.
+      - name: Download Linux artifact
+        uses: actions/download-artifact@v7
+        with:
+          name: bioacoustic-vamp-pack-linux_x86_64
+          path: dist/linux
+
+      - name: Download Windows artifact
+        uses: actions/download-artifact@v7
+        with:
+          name: bioacoustic-vamp-pack-windows_x86_64
+          path: dist/windows
+
+      - name: Download macOS artifact
+        uses: actions/download-artifact@v7
+        with:
+          name: bioacoustic-vamp-pack-macos_arm64
+          path: dist/macos
+
+      # ── Step 2: Repackage each platform's files into a single named zip ────
+      # download-artifact extracts the artifact's files directly into path/,
+      # so each dist/<platform>/ folder here holds the .so/.dll/.dylib, the
+      # .py scripts, and the .csv label files for that platform, flat (no
+      # subfolder) — zip -j keeps that flat layout inside the zip too.
+      - name: Zip each platform pack
+        run: |
+          (cd dist/linux   && zip -j ../../bioacoustic-vamp-pack-linux_x86_64.zip   *)
+          (cd dist/windows && zip -j ../../bioacoustic-vamp-pack-windows_x86_64.zip *)
+          (cd dist/macos   && zip -j ../../bioacoustic-vamp-pack-macos_arm64.zip    *)
+
+      # ── Step 3: Publish the Release with exactly these three assets ───────
+      # softprops/action-gh-release creates the Release (or updates it, if a
+      # Release for this tag already exists) and attaches only the files
+      # listed here — nothing else from dist/ or the repo gets uploaded.
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v3
+        with:
+          files: |
+            bioacoustic-vamp-pack-linux_x86_64.zip
+            bioacoustic-vamp-pack-windows_x86_64.zip
+            bioacoustic-vamp-pack-macos_arm64.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

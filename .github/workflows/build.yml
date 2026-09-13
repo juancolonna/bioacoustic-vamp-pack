@@ -2,8 +2,9 @@
 # GitHub Actions Workflow: C++ Compilation
 #
 # Builds the Bioacoustic VAMP Plugin Pack (BirdNET + Perch + SurfPerch + YAMNet + PiedTamarin) as shared
-# libraries: .so on Ubuntu 24.04, .dll on Windows (via MSYS2/MinGW), .dylib on macOS (via Homebrew),
-# and optionally publishes them as a GitHub Release when a version tag is pushed. 
+# libraries — .so on Ubuntu 24.04, .dll on Windows (via MSYS2/MinGW), .dylib on macOS
+# (via Homebrew). Publishing the GitHub Release is handled by release.yml, which calls
+# this workflow as a reusable workflow (workflow_call) on tag pushes.
 #
 # Prof. Juan G. Colonna, IComp, UFAM.
 #
@@ -14,24 +15,23 @@ name: C++ Compilation
 on:
   push:
     branches: [ main ]       # Run on every push to the main branch
-    tags:
-      - 'v*'                 # Also run when a version tag is pushed (e.g. v1.0.0)
   pull_request:
     branches: [ main ]       # Run on pull requests targeting main
   workflow_dispatch:         # Allow manual triggering from the Actions tab
+  workflow_call:             # Makes this workflow callable from release.yml on tag pushes
 
-# ── Permissions ───────────────────────────────────────────────────────────────
-# 'contents: write' is required to create GitHub Releases and upload assets.
-permissions:
-  contents: write
+# 'contents: write' was removed — this workflow no longer publishes any Release,
+# it only builds and uploads artifacts. release.yml holds that permission instead.
 
 # ── Jobs ──────────────────────────────────────────────────────────────────────
 jobs:
   build:
+    # Builds on Linux (ubuntu-latest), Windows (windows-latest, via MSYS2/MinGW),
+    # and macOS (macos-latest — currently resolves to Apple Silicon/arm64).
     strategy:
-      fail-fast: false                                     # deixa cada job terminar independente dos outros
+      fail-fast: false                                     # let each OS job finish independently of the others
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]   
+        os: [ubuntu-latest, windows-latest, macos-latest]
 
     runs-on: ${{ matrix.os }}
 
@@ -46,15 +46,15 @@ jobs:
       # ── Step 2: Install build dependencies ──────────────────────────────────
       # Linux: installs cmake, g++ (C++17 compiler), and vamp-plugin-sdk via apt.
       # Windows: installs the equivalent MinGW toolchain, cmake, ninja, and
-      # vamp-plugin-sdk via MSYS2/pacman (mingw-w64-ucrt-x86_64-* packages).   
+      # vamp-plugin-sdk via MSYS2/pacman (mingw-w64-ucrt-x86_64-* packages).
       - name: Install Dependencies (Linux)
-        if: runner.os == 'Linux'               
+        if: runner.os == 'Linux'
         run: |
           sudo apt update
           sudo apt install -y cmake g++ vamp-plugin-sdk
 
-      # Installs the GCC (MinGW) toolchain + CMake + vamp-plugin-sdk via MSYS2/pacman.
-      # Keeps the same compiler (GCC) used on Linux, avoiding the need to port the project to MSVC.
+      # Installs the GCC (MinGW) toolchain, cmake, and vamp-plugin-sdk via MSYS2/pacman.
+      # Keeps the same compiler family (GCC) used on Linux, avoiding a port to MSVC.
       - name: Install Dependencies (Windows via MSYS2)
         if: runner.os == 'Windows'
         uses: msys2/setup-msys2@v2
@@ -67,8 +67,8 @@ jobs:
             mingw-w64-ucrt-x86_64-ninja
             mingw-w64-ucrt-x86_64-vamp-plugin-sdk
 
-      # Homebrew comes pre-installed on GitHub's macOS runners.
-      # The compiler (Apple Clang) is included with the runner's Xcode Command Line Tools;
+      # Homebrew ships preinstalled on GitHub's macOS runners. The compiler
+      # (Apple Clang) already comes with the runner's Xcode Command Line Tools;
       # only cmake and the VAMP SDK are missing.
       - name: Install Dependencies (macOS)
         if: runner.os == 'macOS'
@@ -79,20 +79,20 @@ jobs:
       # The CMakeLists.txt links against libvamp-sdk.a to avoid requiring
       # libvamp-sdk.so on the user's system.
       - name: Check static VAMP SDK (Linux)
-        if: runner.os == 'Linux'               
+        if: runner.os == 'Linux'
         run: |
           find /usr/lib /usr/lib64 -name "libvamp-sdk.a" -print
 
-      # Equivalent in MSYS2 UCRT64 environment
+      # Equivalent check inside the MSYS2 UCRT64 environment.
       - name: Check static VAMP SDK (Windows)
         if: runner.os == 'Windows'
         shell: msys2 {0}
         run: |
           find /ucrt64/lib -name "libvamp-sdk.a" -print
 
-      # Search on both possible Homebrew prefixes, but only one exists at a time,
-      # depending on the runner architecture (Apple Silicon vs. Intel); || true prevents
-      # a "no such directory" error for the missing path from causing the step to fail.
+      # Searches both possible Homebrew prefixes — only one exists at a time,
+      # depending on the runner's architecture (Apple Silicon vs Intel); || true
+      # keeps the "no such directory" on the missing path from failing the step.
       - name: Check static VAMP SDK (macOS)
         if: runner.os == 'macOS'
         run: |
@@ -104,16 +104,17 @@ jobs:
       # birdnet-vamp / perch-vamp / surfperch-vamp / yamnet-vamp / piedtamarin-vamp
       # as build/<target>.so on Linux (make -j$(nproc)), build/<target>.dll on
       # Windows (Ninja, via cmake --build --parallel), and build/<target>.dylib
-      # on macOS (Unix Makefiles default, via cmake --build --parallel).        
+      # on macOS (Unix Makefiles default, via cmake --build --parallel).
       - name: Compile on Linux
-        if: runner.os == 'Linux'                
+        if: runner.os == 'Linux'
         run: |
           mkdir build && cd build
           cmake .. -DCMAKE_BUILD_TYPE=Release
           make -j$(nproc)
 
-      # Same workflow (mkdir build && cmake && build), but with the Ninja generator,
-      # which is single-config and avoids the extra build/Release/ folder created by Visual Studio generators.
+      # Same flow as Linux (mkdir build && cmake && build), but with the Ninja
+      # generator, which is single-config and avoids the extra build/Release/
+      # folder that Visual Studio generators create.
       - name: Compile on Windows
         if: runner.os == 'Windows'
         shell: msys2 {0}
@@ -122,9 +123,9 @@ jobs:
           cmake .. -G Ninja -DCMAKE_BUILD_TYPE=Release
           cmake --build . --parallel
 
-      # macOS doesn't have "nproc" (that's part of GNU coreutils, not BSD/macOS),
-      # so use "cmake --build . --parallel" instead of "make -j$(nproc)"; CMake automatically
-      # detects the available cores, just like on Windows.
+      # macOS has no "nproc" (that's GNU coreutils, not available on BSD/macOS),
+      # hence "cmake --build . --parallel" instead of "make -j$(nproc)"; CMake
+      # already detects the available cores on its own, same as on Windows above.
       - name: Compile on macOS
         if: runner.os == 'macOS'
         run: |
@@ -133,10 +134,10 @@ jobs:
           cmake --build . --parallel
 
       # ── Step 5: Collect all distributable files into a staging folder ───────
-      # Gathers the compiled shared libraries (.so on Linux, .dll on Windows,      
+      # Gathers the compiled shared libraries (.so on Linux, .dll on Windows,
       # .dylib on macOS), Python inference scripts, and label files into 'dist'.
       - name: Prepare Release Files (Linux)
-        if: runner.os == 'Linux'                
+        if: runner.os == 'Linux'
         run: |
           mkdir dist
           mv build/birdnet-vamp.so dist/birdnet-vamp.so
@@ -158,8 +159,9 @@ jobs:
           mv build/piedtamarin-vamp.so dist/piedtamarin-vamp.so
           cp piedtamarin_plugin/piedtamarin_run.py dist/piedtamarin_run.py
 
-      # Identical to the block above, but with the .dll extension (native CMake output on Windows).
-      # Assumes that CMakeLists.txt does not manually force the ".so" extension on the SHARED lib.
+      # Identical to the block above, but with the .dll extension (CMake's native
+      # output on Windows). Assumes CMakeLists.txt doesn't manually force the
+      # ".so" suffix on the SHARED lib.
       - name: Prepare Release Files (Windows)
         if: runner.os == 'Windows'
         shell: msys2 {0}
@@ -184,8 +186,8 @@ jobs:
           mv build/piedtamarin-vamp.dll dist/piedtamarin-vamp.dll
           cp piedtamarin_plugin/piedtamarin_run.py dist/piedtamarin_run.py
 
-      # Identical to the blocks above, but with the .dylib extension (native
-      # CMake output for SHARED libs on macOS, without needing to force a SUFFIX in CMakeLists.txt).
+      # Identical to the blocks above, with the .dylib extension (CMake's native
+      # output for a SHARED lib on macOS, no need to force SUFFIX in CMakeLists.txt).
       - name: Prepare Release Files (macOS)
         if: runner.os == 'macOS'
         run: |
@@ -215,12 +217,12 @@ jobs:
       # Windows — expected: KERNEL32.dll, msvcrt.dll / api-ms-win-crt-*.dll.
       #         ideally not present: libstdc++-6.dll, libgcc_s_seh-1.dll (both
       #         are statically linked in via -static-libstdc++ -static-libgcc).
-      # macOS — expected: only system libs under /usr/lib/ (libc++.1.dylib,          
+      # macOS — expected: only system libs under /usr/lib/ (libc++.1.dylib,
       #         libSystem.B.dylib); ideally not present: any /opt/homebrew/... or
       #         /usr/local/... path, which would mean it depends on Homebrew being
       #         installed on the end user's machine.
       - name: Check dynamic dependencies (Linux)
-        if: runner.os == 'Linux'              
+        if: runner.os == 'Linux'
         run: |
           echo "birdnet-vamp.so"
           ldd dist/birdnet-vamp.so || true
@@ -239,7 +241,7 @@ jobs:
           echo "piedtamarin-vamp.so"
           ldd dist/piedtamarin-vamp.so || true
 
-      # ldd also exists in MSYS2; just replace .so with .dll
+      # ldd also exists inside MSYS2, so this just swaps .so for .dll.
       - name: Check dynamic dependencies (Windows)
         if: runner.os == 'Windows'
         shell: msys2 {0}
@@ -261,8 +263,8 @@ jobs:
           echo "piedtamarin-vamp.dll"
           ldd dist/piedtamarin-vamp.dll || true
 
-      # macOS does not have ldd; otool -L is the native equivalent
-      # (part of the Xcode Command Line Tools, already present on the runner).
+      # macOS has no ldd; otool -L is the native equivalent (part of the Xcode
+      # Command Line Tools, already present on the runner).
       - name: Check dynamic dependencies (macOS)
         if: runner.os == 'macOS'
         run: |
@@ -283,12 +285,12 @@ jobs:
           echo "piedtamarin-vamp.dylib"
           otool -L dist/piedtamarin-vamp.dylib || true
 
-      # ── Step 7: Upload the dist/ folder as a workflow artifact ──────────────
-      # upload-artifact zips the folder contents automatically.
-      # This artifact is available for download from the Actions run summary.
-      # Confirm that each .dll exports the vampGetPluginDescriptor symbol,
-      # which is what Audacity / Sonic Visualiser look for via GetProcAddress when loading the plugin. 
-      # If it doesn't export it, the host loads the DLL without any error but lists no plugin.
+      # ── Step 7: Verify the VAMP entry point is exported ─────────────────────
+      # With no Windows machine to test against directly, this is what CI can
+      # verify: that each .dll exports the vampGetPluginDescriptor symbol, which
+      # is what Audacity/Sonic Visualiser look up via GetProcAddress when loading
+      # a plugin. If it isn't exported, the host loads the DLL with no error at
+      # all, but lists no plugin from it.
       - name: Verify VAMP entry point is exported (Windows)
         if: runner.os == 'Windows'
         shell: msys2 {0}
@@ -300,7 +302,9 @@ jobs:
               || { echo "MISSING vampGetPluginDescriptor export"; exit 1; }
           done
 
-      # macOS exports symbols by default (like Linux ELF, unlike Windows PE)
+      # Equivalent check on macOS. Mach-O exports symbols by default (like Linux's
+      # ELF, unlike Windows' PE), so the risk here is lower, but this keeps the
+      # same verification for symmetry and because there's no Mac to test on either.
       - name: Verify VAMP entry point is exported (macOS)
         if: runner.os == 'macOS'
         run: |
@@ -311,42 +315,15 @@ jobs:
               || { echo "MISSING vampGetPluginDescriptor export"; exit 1; }
           done
 
+      # ── Step 8: Upload the dist/ folder as a workflow artifact ──────────────
+      # upload-artifact zips the folder contents automatically.
+      # This artifact is available for download from the Actions run summary,
+      # and is what release.yml downloads when publishing a Release.
       - name: Upload Plugin Pack
         uses: actions/upload-artifact@v7
         with:
-          # Mandatory dynamic name, as the three jobs (Linux, Windows, macOS) 
-          # run in parallel in the same workflow run, and upload-artifact does not accept duplicate names.
+          # The name must vary by OS — required because the three jobs (Linux,
+          # Windows, macOS) run in parallel within the same workflow run, and
+          # upload-artifact rejects duplicate names.
           name: bioacoustic-vamp-pack-${{ runner.os == 'Windows' && 'windows_x86_64' || runner.os == 'macOS' && 'macos_arm64' || 'linux_x86_64' }}
           path: dist/
-
-      # ── Step 8: Publish GitHub Release ──────────────────────────────────────
-      # Only runs when the workflow was triggered by a version tag (e.g. v1.2.0).
-      # Creates an explicit .zip from dist/ and attaches it to the Release.
-      # The zip -j flag flattens the paths so there are no subfolders inside
-      # the archive.
-      - name: Create Release Zip (Linux)
-        if: runner.os == 'Linux' && startsWith(github.ref, 'refs/tags/')   
-        run: |
-          cd dist && zip -j ../bioacoustic-vamp-pack-linux_x86_64.zip *
-
-      - name: Create Release Zip (Windows)
-        if: runner.os == 'Windows' && startsWith(github.ref, 'refs/tags/')
-        shell: msys2 {0}
-        run: |
-          cd dist && zip -j ../bioacoustic-vamp-pack-windows_x86_64.zip *
-
-      - name: Create Release Zip (macOS)
-        if: runner.os == 'macOS' && startsWith(github.ref, 'refs/tags/')
-        run: |
-          cd dist && zip -j ../bioacoustic-vamp-pack-macos_arm64.zip *
-
-      - name: Upload to GitHub Release
-        uses: softprops/action-gh-release@v3
-        if: startsWith(github.ref, 'refs/tags/')
-        with:
-          files: |
-            bioacoustic-vamp-pack-linux_x86_64.zip
-            bioacoustic-vamp-pack-windows_x86_64.zip
-            bioacoustic-vamp-pack-macos_arm64.zip
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
