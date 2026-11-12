@@ -63,60 +63,73 @@ Detections appear as labeled regions directly on the label track (Audacity) or a
 
 ## Requirements
 
-All platforms need [uv](https://github.com/astral-sh/uv) (an extremely fast Python package and project manager, written in Rust) to run the Python inference scripts. An internet connection is required the first time a plugin runs, so `uv` can resolve the pinned model dependencies.
+The Bioacoustic VAMP Pack supports the following platforms:
 
-| Platform | Additional requirement |
+| Platform | Requirements |
 |---|---|
-| Linux | glibc as new as Ubuntu's current GitHub Actions runner image (Ubuntu 24.04 at the time of writing) or newer. Older distros such as Ubuntu 22.04 may not work — the binaries link dynamically against glibc, which is forward- but not backward-compatible. |
-| Windows | Windows 10 or later, x86_64 |
-| macOS | Apple Silicon (arm64). Intel Macs are not currently built. |
+| Linux | x86_64, glibc 2.39 or newer (Ubuntu 24.04 or newer recommended). |
+| Windows | Windows 10 or later, x86_64. |
+| macOS | Apple Silicon (arm64). Intel Macs are not currently supported. |
+
+All platforms require an internet connection during installation. The installation scripts automatically install [uv](https://github.com/astral-sh/uv), download the latest release, extract the plugin files, and prepare the Python dependencies for all inference scripts.
+
+An internet connection is required during installation to download Python dependencies. Additional downloads may be required the first time each inference model is loaded. Model files are cached locally and reused in subsequent executions.
 
 ## Installation
 
-Download the release archive for your platform from the [latest release](https://github.com/juancolonna/bioacoustic-vamp-pack/releases/latest):
+The easiest way to install the Bioacoustic VAMP Pack is to use the automatic installer for your operating system.
 
-| Platform | File |
-|---|---|
-| Linux | `bioacoustic-vamp-pack-linux_x86_64.zip` |
-| Windows | `bioacoustic-vamp-pack-windows_x86_64.zip` |
-| macOS | `bioacoustic-vamp-pack-macos_arm64.zip` |
+The installer automatically:
+- Detects the operating system and architecture.
+- Installs [uv](https://github.com/astral-sh/uv) if it is not already available.
+- Downloads the latest release from GitHub.
+- Extracts the plugin pack into the `~/vamp` directory (or the equivalent user directory on Windows).
+- Pre-installs the Python dependencies required by all five inference scripts.
+- Removes macOS quarantine attributes when running on macOS.
+
+**No administrator privileges are required to run the installer.**
 
 ### 🐧 Linux
 
-```bash
-# 1. Install uv
-curl -LsSf https://astral.sh/uv/install.sh | sh
+On Ubuntu/Debian, first ensure that `curl` and `unzip` are installed:
 
-# 2. Extract the plugin pack straight into ~/vamp
-mkdir -p ~/vamp
-unzip bioacoustic-vamp-pack-linux_x86_64.zip -d ~/vamp
+```bash
+sudo apt update && sudo apt install -y curl unzip
 ```
+
+Then run the installer:
+
+```bash
+curl -LsSf https://raw.githubusercontent.com/juancolonna/bioacoustic-vamp-pack/main/install.sh | bash
+```
+
+**Note:** Linux binaries require glibc 2.39 or newer. Older distributions, such as Ubuntu 22.04, may not be compatible.
 
 ### 🪟 Windows
 
-```powershell
-# 1. Install uv
-powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+Open PowerShell and run:
 
-# 2. Extract the plugin pack straight into %USERPROFILE%\vamp
-mkdir $HOME\vamp
-Expand-Archive bioacoustic-vamp-pack-windows_x86_64.zip -DestinationPath $HOME\vamp
+```powershell
+irm https://raw.githubusercontent.com/juancolonna/bioacoustic-vamp-pack/main/install.ps1 | iex
 ```
 
 ### 🍏 macOS
 
+Open the Terminal and run:
+
 ```bash
-# 1. Install uv
-curl -LsSf https://astral.sh/uv/install.sh | sh
-
-# 2. Extract the plugin pack straight into ~/vamp
-mkdir -p ~/vamp
-unzip bioacoustic-vamp-pack-macos_arm64.zip -d ~/vamp
-
-# 3. Remove the quarantine flag macOS attaches to downloaded files —
-#    required, since the plugin libraries aren't notarized by Apple.
-xattr -dr com.apple.quarantine ~/vamp
+curl -LsSf https://raw.githubusercontent.com/juancolonna/bioacoustic-vamp-pack/main/install.sh | bash
 ```
+
+The installer automatically removes the macOS quarantine attributes from the downloaded plugin files. No additional `xattr` command is necessary.
+
+**Note:** Only Apple Silicon Macs (arm64) are currently supported.
+
+### After installation
+
+Once the installer completes successfully, launch Audacity or Sonic Visualiser. The VAMP plugins will be available from the `~/vamp` directory.
+
+The first execution of an inference script may take longer than subsequent executions because the required model files may need to be downloaded and cached.
 
 ## Running
 
