@@ -7,7 +7,7 @@
 [![Windows](https://img.shields.io/badge/Windows-x86__64-0078D6.svg)](#installation)
 [![macOS](https://img.shields.io/badge/macOS-Apple%20Silicon-000000.svg)](#installation)
 
-[![Audacity 3.7.7](https://img.shields.io/badge/Audacity-3.7.7-2C7ED6.svg)](https://www.audacityteam.org/)
+[![Audacity 3.7.9](https://img.shields.io/badge/Audacity-3.7.7-2C7ED6.svg)](https://www.audacityteam.org/)
 [![Sonic-Visualiser](https://img.shields.io/badge/SonicVisualiser-5.2.1-red.svg)](https://www.sonicvisualiser.org/)
 
 [![BirdNET 2.4](https://img.shields.io/badge/BirdNET-2.4-blue.svg)](https://github.com/birdnet-team/birdnet)
@@ -16,7 +16,7 @@
 [![YAMNet 1](https://img.shields.io/badge/YAMNet-1.0-lightgreen.svg)](https://www.tensorflow.org/hub/tutorials/yamnet)
 [![PiedTamarin](https://img.shields.io/badge/PiedTamarin-sauim--detector-9C27B0.svg)](https://github.com/juancolonna/Sauim)
 
-A collection of Bioacoustic VAMP plugins for [Audacity 3.7](https://www.audacityteam.org/) and/or [Sonic-Visualiser](https://sonicvisualiser.org/) that run various bioacoustic models to automatically detect and label sounds in audio recordings. Prebuilt binaries are available for **Linux, Windows, and macOS (Apple Silicon)**.
+A collection of Bioacoustic VAMP plugins for [Audacity 3.7.9](https://github.com/audacity/audacity/releases/tag/Audacity-3.7.9) and/or [Sonic-Visualiser](https://sonicvisualiser.org/) that run various bioacoustic models to automatically detect and label sounds in audio recordings. Prebuilt binaries are available for **Linux, Windows, and macOS (Apple Silicon)**.
 
 This repository includes plugins for:
 - **BirdNET v2.4**: Automatic bird species detection
@@ -151,8 +151,8 @@ sonic-visualiser
 If you prefer to use an AppImage, download the official Audacity or Sonic-Visualiser AppImage from the project website and run it with `VAMP_PATH=$HOME/vamp`, for example:
 
 ```bash
-sudo chmod +x ~/Downloads/Audacity-3.7.7-x86_64.AppImage
-VAMP_PATH="$HOME/vamp" "$HOME/Downloads/Audacity-3.7.7-x86_64.AppImage"
+sudo chmod +x ~/Downloads/audacity-3.7.9-x86_64.AppImage
+VAMP_PATH="$HOME/vamp" "$HOME/Downloads/audacity-3.7.9-x86_64.AppImage"
 ```
 
 or:
