@@ -151,8 +151,8 @@ sonic-visualiser
 If you prefer to use an AppImage, download the official Audacity or Sonic-Visualiser AppImage from the project website and run it with `VAMP_PATH=$HOME/vamp`, for example:
 
 ```bash
-sudo chmod +x ~/Downloads/audacity-3.7.9-x86_64.AppImage
-VAMP_PATH="$HOME/vamp" "$HOME/Downloads/audacity-3.7.9-x86_64.AppImage"
+sudo chmod +x ~/Downloads/audacity-linux-3.7.9-x64-22.04.AppImage
+VAMP_PATH="$HOME/vamp" "$HOME/Downloads/audacity-linux-3.7.9-x64-22.04.AppImage"
 ```
 
 or:
